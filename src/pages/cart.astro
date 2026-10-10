@@ -1,0 +1,31 @@
+---
+import Base from "../layouts/Base.astro";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+---
+
+<Base title="Your cart">
+	<h1>Your cart</h1>
+	<div id="cart-msg" role="status" class="cd-muted">Loading your cart…</div>
+	<div id="cart-wrap" hidden>
+		<div style="overflow-x:auto">
+			<table class="cd-table">
+				<thead><tr><th>Item</th><th>Price</th><th>Quantity</th><th>Total</th><th><span class="sr-only">Remove</span></th></tr></thead>
+				<tbody id="cart-body"></tbody>
+			</table>
+		</div>
+		<p><strong>Subtotal: <span id="subtotal"></span></strong></p>
+		<p class="cd-muted">Delivery charge is added at checkout. Payment is cash on delivery.</p>
+		<p id="blocked" class="cd-alert" hidden>Some items are unavailable. Remove them or change the quantity to continue.</p>
+		<a id="checkout-link" class="cd-btn" href="/checkout">Checkout</a>
+		<a class="cd-btn secondary" href="/products">Continue shopping</a>
+	</div>
+	<noscript><p>The cart needs JavaScript. Please enable it to shop.</p></noscript>
+</Base>
+
+<style is:global>
+	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<script>
+	import "../cartde/client/cart-page";
+</script>

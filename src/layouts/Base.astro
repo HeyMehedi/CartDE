@@ -4,6 +4,7 @@ import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
+import "../themes/default/theme.css";
 
 interface Props {
 	title: string;
@@ -58,6 +59,7 @@ const pageCtx = createPublicPageContext({
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{fullTitle}</title>
 		<EmDashHead page={pageCtx} />
+		<slot name="head" />
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
@@ -88,7 +90,9 @@ const pageCtx = createPublicPageContext({
 						</a>
 					))
 				}
+				<a href="/products">Shop</a>
 				<LiveSearch placeholder="Search..." collections={["posts", "pages"]} />
+				<a href="/cart" class="cart-link">Cart <span id="cart-count" aria-live="polite"></span></a>
 			</nav>
 		</header>
 
@@ -96,6 +100,9 @@ const pageCtx = createPublicPageContext({
 			<slot />
 		</main>
 
+		<script>
+			import "../cartde/client/cart-badge";
+		</script>
 		<EmDashBodyEnd page={pageCtx} />
 	</body>
 </html>

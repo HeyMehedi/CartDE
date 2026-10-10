@@ -11,7 +11,8 @@ CartDE (Cart Digital Engine) is an open-source online store that you deploy to y
 | Foundation: EmDash 1.2.0 on Astro, Workers, D1, R2 | Implemented. Baseline deployed to Cloudflare on 2026-10-10. |
 | Admin login and media library (from EmDash) | Available locally through the EmDash admin. Not yet verified end to end in this repository. |
 | Product catalogue: products, variants, categories, stock, store settings, admin pages and API (`/admin`) | Partial (milestone 0.2). Domain, database and API are covered by automated tests; the admin pages are not yet browser-tested. |
-| Minimal storefront read path (`/products`, `/products/[slug]`) | Partial (milestone 0.2). Theme, cart, cash-on-delivery checkout and orders are planned (0.3). |
+| Storefront: home, product list (24 per page, category filter), product page with variant selector and Product JSON-LD, cart, cash-on-delivery checkout, order confirmation | Partial (milestone 0.3). Server logic is covered by automated tests and an HTTP smoke run; the browser screens have not been exercised in a real browser. |
+| Orders: placement with atomic stock decrement, idempotent retries, status workflow with stock restore, customers, printable summary | Partial (milestone 0.3). Same verification as above. |
 | One-click deployment and first-run store setup | Planned (milestone 0.4) |
 | AI tools through MCP | Planned (milestone 0.5) |
 | Themes and extensions | Planned (milestone 0.6) |

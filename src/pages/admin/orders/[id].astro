@@ -1,0 +1,85 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { adminOrder, adminStore } from "../../../cartde/app/catalogue";
+import { CartdeError } from "../../../cartde/db/util";
+import { allowedTransitions } from "../../../cartde/domain/orders";
+import { formatMoney } from "../../../cartde/domain/money";
+
+let order;
+try {
+	order = await adminOrder(Astro.params.id!);
+} catch (err) {
+	if (err instanceof CartdeError && err.code === "not_found") return new Response("Order not found", { status: 404 });
+	throw err;
+}
+const store = await adminStore();
+const money = (n: number) => formatMoney(n, order.currency, store.locale);
+const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeStyle: "short", timeZone: store.timezone });
+const next = allowedTransitions(order.status);
+const data = JSON.stringify({ id: order.id, status: order.status, merchant_note: order.merchant_note ?? "" }).replace(/</g, "\\u003c");
+---
+
+<AdminLayout title={`Order #${order.order_number}`} active="orders">
+	<h1>Order #{order.order_number} <span class="muted">· {order.status} · payment {order.payment_status} (cash on delivery)</span></h1>
+	<p class="no-print"><button type="button" onclick="window.print()">Print summary</button> <a href="/admin/orders">← All orders</a></p>
+	<div id="msg" role="alert" hidden class="error"></div>
+	<script type="application/json" id="order-data" set:html={data} />
+
+	<p>Placed {when.format(new Date(order.placed_at))}</p>
+	<h2>Customer and delivery</h2>
+	<p>
+		<strong>{order.ship_recipient_name}</strong> · <a href={`tel:${order.ship_phone}`}>{order.ship_phone}</a>
+		{order.customer_email && <> · {order.customer_email}</>}<br />
+		{order.ship_line1}, {order.ship_area}, {order.ship_district}
+		{order.customer_note && <><br /><em>Customer note: {order.customer_note}</em></>}
+	</p>
+
+	<h2>Items</h2>
+	<div class="scroll">
+		<table>
+			<thead><tr><th>Item</th><th>SKU</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
+			<tbody>
+				{order.items.map((i) => <tr><td>{i.product_name}{i.variant_title !== "Default" && ` (${i.variant_title})`}</td><td>{i.sku ?? "—"}</td><td>{i.quantity}</td><td>{money(i.unit_price_minor)}</td><td>{money(i.line_total_minor)}</td></tr>)}
+			</tbody>
+			<tfoot>
+				<tr><td colspan="4">Subtotal</td><td>{money(order.subtotal_minor)}</td></tr>
+				<tr><td colspan="4">Delivery</td><td>{money(order.delivery_minor)}</td></tr>
+				<tr><th colspan="4">Collect on delivery</th><th>{money(order.total_minor)}</th></tr>
+			</tfoot>
+		</table>
+	</div>
+
+	{
+		next.length > 0 && (
+			<section class="no-print">
+				<h2>Change status</h2>
+				<div class="row">
+					<div><label for="note">Note (optional)</label><input id="note" type="text" maxlength="500" /></div>
+					{next.map((s) => <button type="button" data-to={s}>Mark {s}</button>)}
+				</div>
+				{(next.includes("returned") || next.includes("cancelled")) && (
+					<p class="muted">
+						{next.includes("returned") && <label style="display:inline;font-weight:400"><input type="checkbox" id="restock" checked /> Put items back in stock when returned</label>}
+						{order.status === "delivered" && <label style="display:inline;font-weight:400;margin-left:1rem"><input type="checkbox" id="cash" /> Cash was refunded to the customer</label>}
+						{" "}Cancelling always restores stock.
+					</p>
+				)}
+			</section>
+		)
+	}
+
+	<section class="no-print">
+		<h2>Merchant note</h2>
+		<textarea id="merchant-note" rows="3" maxlength="2000">{order.merchant_note ?? ""}</textarea>
+		<p><button type="button" id="save-note">Save note</button></p>
+	</section>
+
+	<h2>History</h2>
+	<ul>
+		{order.events.map((e) => <li>{when.format(new Date(e.created_at))} — {e.from_status ? `${e.from_status} → ` : ""}<strong>{e.to_status}</strong>{e.note && `: ${e.note}`}</li>)}
+	</ul>
+</AdminLayout>
+
+<script>
+	import "../../../cartde/client/order-detail";
+</script>

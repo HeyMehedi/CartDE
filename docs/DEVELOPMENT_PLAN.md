@@ -144,6 +144,8 @@ Progress (2026-10-10): migration, domain, repositories, guard, admin API, admin 
 
 ### 0.3 COD order journey (XL)
 
+Progress (2026-10-10): migration `0002_orders.sql`, domain (districts, phone, cart totals, state machine), atomic checkout, order and customer admin, storefront theme, cart, checkout, confirmation and JSON-LD are written. 96 automated tests pass, including every status pair, the last-unit race, idempotent retry and rollback. An HTTP run against the dev server placed an order, replayed the key, refused an oversell and checked confirmation tokens. Not done: Playwright end-to-end (no browser tooling installed; plan deviation), a real-D1 concurrency test, FR-SF-5's no-JavaScript form post (the cart is client-side by design, so checkout needs JavaScript), rate limiting of the public checkout endpoint, and a deploy.
+
 - Migration `0002_orders.sql`: customers, addresses, orders, order items, order events.
 - Domain: cart totals, delivery zones, checkout validation (Bangladesh phone, districts), order state machine.
 - Checkout service: batch with conditional stock updates, idempotency key, order number counter, snapshots, access token.

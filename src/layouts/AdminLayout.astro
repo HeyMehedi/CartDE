@@ -1,11 +1,14 @@
 ---
 interface Props {
 	title: string;
-	active?: "products" | "categories" | "settings";
+	active?: "overview" | "orders" | "products" | "customers" | "categories" | "settings";
 }
 const { title, active } = Astro.props;
 const links = [
+	["overview", "/admin", "Overview"],
+	["orders", "/admin/orders", "Orders"],
 	["products", "/admin/products", "Products"],
+	["customers", "/admin/customers", "Customers"],
 	["categories", "/admin/categories", "Categories"],
 	["settings", "/admin/settings", "Settings"],
 ] as const;
@@ -40,6 +43,10 @@ const links = [
 			.admin .muted { opacity: .7; }
 			.admin fieldset { border: 1px solid var(--line); margin: 1rem 0; }
 			.admin .scroll { overflow-x: auto; }
+			.admin .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; }
+			.admin .card { border: 1px solid var(--line); padding: .75rem 1rem; }
+			.admin .card strong { display: block; font-size: 1.8rem; }
+			@media print { .admin-bar, .no-print { display: none !important; } }
 		</style>
 	</head>
 	<body>

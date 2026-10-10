@@ -1,0 +1,41 @@
+/* CartDE default storefront theme. Tokens first; components below use only the tokens. */
+:root {
+	color-scheme: light dark;
+	--cd-bg: Canvas;
+	--cd-fg: CanvasText;
+	--cd-muted: color-mix(in srgb, CanvasText 62%, Canvas);
+	--cd-line: color-mix(in srgb, CanvasText 16%, Canvas);
+	--cd-accent: #0b6b4f;
+	--cd-accent-fg: #fff;
+	--cd-danger: #b00020;
+	--cd-radius: 6px;
+	--cd-gap: 1rem;
+	--cd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
+}
+body { font-family: var(--cd-font); background: var(--cd-bg); color: var(--cd-fg); line-height: 1.55; margin: 0; }
+header nav { display: flex; flex-wrap: wrap; gap: var(--cd-gap); align-items: center; padding: .75rem var(--cd-gap); border-bottom: 1px solid var(--cd-line); }
+header nav a { color: inherit; }
+main { max-width: 64rem; margin: 0 auto; padding: var(--cd-gap); }
+img { max-width: 100%; height: auto; }
+.cd-grid { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--cd-gap); }
+.cd-card a { display: block; color: inherit; text-decoration: none; }
+.cd-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--cd-radius); background: var(--cd-line); }
+.cd-price { font-weight: 700; }
+.cd-muted { color: var(--cd-muted); }
+.cd-btn { display: inline-block; font: inherit; padding: .6rem 1.1rem; border-radius: var(--cd-radius); border: 1px solid var(--cd-accent); background: var(--cd-accent); color: var(--cd-accent-fg); cursor: pointer; text-decoration: none; }
+.cd-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.cd-btn.secondary { background: transparent; color: var(--cd-accent); }
+.cd-field { margin: .75rem 0; }
+.cd-field label { display: block; font-weight: 600; margin-bottom: .2rem; }
+.cd-field input, .cd-field select, .cd-field textarea { font: inherit; width: 100%; box-sizing: border-box; padding: .5rem; border: 1px solid var(--cd-line); border-radius: var(--cd-radius); background: transparent; color: inherit; }
+.cd-error { color: var(--cd-danger); }
+.cd-alert { border: 1px solid var(--cd-danger); color: var(--cd-danger); padding: .6rem; border-radius: var(--cd-radius); margin: .75rem 0; }
+.cd-table { width: 100%; border-collapse: collapse; }
+.cd-table th, .cd-table td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--cd-line); vertical-align: top; }
+.cd-split { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+@media (min-width: 48rem) { .cd-split { grid-template-columns: 1fr 1fr; } .cd-split.wide-left { grid-template-columns: 3fr 2fr; } }
+.cd-pager { display: flex; gap: 1rem; margin: 1.5rem 0; }
+.cd-chips { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
+.cd-chips a { border: 1px solid var(--cd-line); border-radius: 999px; padding: .2rem .8rem; text-decoration: none; color: inherit; }
+.cd-chips a[aria-current="true"] { background: var(--cd-accent); color: var(--cd-accent-fg); border-color: var(--cd-accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--cd-accent); outline-offset: 2px; }

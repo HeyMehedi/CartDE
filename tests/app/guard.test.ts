@@ -46,4 +46,12 @@ describe("guard", () => {
 		expect(decide(req({ method: "PATCH", headers: { "x-cartde-request": "1", origin: "https://evil.test" } }))).toMatchObject({ code: "csrf" });
 		expect(decide(req({ method: "POST", headers: { "x-cartde-request": "1" } }))).toMatchObject({ code: "csrf" });
 	});
+
+	it("protects the public checkout endpoint against cross-site posts without requiring login", () => {
+		const co = { pathname: "/api/cartde/checkout", user: null, method: "POST" } as const;
+		expect(decide(req({ ...co, headers: { "sec-fetch-site": "same-origin", "x-cartde-request": "1" } }))).toEqual({ action: "allow" });
+		expect(decide(req({ ...co, headers: { "sec-fetch-site": "cross-site", "x-cartde-request": "1" } }))).toMatchObject({ code: "csrf" });
+		expect(decide(req({ ...co, headers: { "sec-fetch-site": "same-origin" } }))).toMatchObject({ code: "csrf" });
+		expect(decide(req({ ...co, method: "GET" }))).toEqual({ action: "allow" });
+	});
 });

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: foundation plus the milestone 0.2 catalogue (products, variants, categories, stock, store settings). Cart, checkout and orders are planned. The full specification is in [SRS.md](SRS.md), section 3.
+Status: foundation, the milestone 0.2 catalogue, and the milestone 0.3 cash-on-delivery order journey. The full specification is in [SRS.md](SRS.md), section 3.
 
 ## Current structure
 
@@ -21,7 +21,8 @@ CartDE is one Astro application with the EmDash integration.
 | `src/cartde/client/` | Browser scripts for the admin pages (not type-checked; see development.md) |
 | `src/middleware.ts` | Applies the guard to `/admin/*` and `/api/cartde/admin/*` after EmDash's auth middleware |
 | `src/pages/admin/`, `src/pages/api/cartde/admin/` | Commerce dashboard pages and JSON API (administrators only) |
-| `src/pages/products/` | Minimal storefront read path |
+| `src/pages/products/`, `cart.astro`, `checkout.astro`, `orders/` | Storefront (theme tokens in `src/themes/default/theme.css`) |
+| `src/pages/api/cartde/` | Public checkout and cart validation; admin API under `admin/` |
 | `wrangler.jsonc` | Worker name, D1 database, R2 bucket, cron trigger |
 
 ## Route ownership
@@ -34,3 +35,7 @@ CartDE owns `/admin/*`, `/api/cartde/admin/*` and `/products/*` (implemented in 
 ## Reuse versus build
 
 EmDash supplies the admin shell, authentication, media library, content pages, site settings and MCP server. CartDE will build products, inventory, cart, checkout and orders in its own `cartde_*` D1 tables. EmDash plugin storage is document and key-value only, so commerce data does not go there.
+
+## Checkout atomicity
+
+`placeOrder` (`src/cartde/db/orders.ts`) sends one D1 batch: customer upsert, then per line a conditional `UPDATE … WHERE stock_qty >= qty AND status = 'active'` followed by a guard statement. The guard inserts a NULL into a NOT NULL column when the previous statement changed no rows, which makes D1 roll the whole batch back. The order number comes from the counter row incremented in the same batch. A unique idempotency key makes retries return the original order. `transitionOrder` uses the same guard to make status changes conditional on the status the admin saw.

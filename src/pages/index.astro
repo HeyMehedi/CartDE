@@ -2,6 +2,8 @@
 import { getEmDashCollection, getSiteSettings } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../layouts/Base.astro";
+import { adminStore, mediaUrls, storefrontProducts } from "../cartde/app/catalogue";
+import { formatMoney } from "../cartde/domain/money";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
 
 const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
@@ -12,18 +14,35 @@ const { siteTitle, siteTagline } = resolveStarterSiteIdentity(
 	await getSiteSettings(),
 );
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const [{ items: products }, store] = await Promise.all([storefrontProducts({ pageSize: 8 }), adminStore()]);
+const urls = await mediaUrls(products.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
 ---
 
 <Base title={siteTitle} description={siteTagline}>
 	<section>
 		<h1>{siteTitle}</h1>
 		<p>{siteTagline}</p>
-		<p>
-			CartDE is open-source commerce software for running your own online store on Cloudflare.
-			Catalogue, cart, checkout and order management are planned for the next releases. This page is the foundation.
-		</p>
-		<p><a href="/_emdash/admin">Open the admin</a></p>
+		<p><a class="cd-btn" href="/products">Shop all products</a></p>
 	</section>
+
+	{
+		products.length > 0 && (
+			<section aria-labelledby="latest">
+				<h2 id="latest">Latest products</h2>
+				<ul class="cd-grid">
+					{products.map((p) => (
+						<li class="cd-card">
+							<a href={`/products/${p.slug}`}>
+								{p.featured_media_id && urls.get(p.featured_media_id) ? <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" /> : <div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />}
+								<div>{p.name}</div>
+								<div class="cd-price">{formatMoney(p.price_minor, store.currency, store.locale)}</div>
+							</a>
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
 
 	<section>
 		<h2>Recent posts</h2>

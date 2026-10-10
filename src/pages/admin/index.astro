@@ -1,3 +1,16 @@
 ---
-return Astro.redirect("/admin/products");
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { adminOverview, adminStore } from "../../cartde/app/catalogue";
+const [o, store] = await Promise.all([adminOverview(), adminStore()]);
 ---
+
+<AdminLayout title="Overview" active="overview">
+	<h1>{store.name}</h1>
+	<div class="cards">
+		<a class="card" href="/admin/orders?status=pending"><strong>{o.pending_orders}</strong>Pending orders</a>
+		<a class="card" href="/admin/orders"><strong>{o.orders_today}</strong>Orders today</a>
+		<a class="card" href="/admin/products?status=active"><strong>{o.active_products}</strong>Active products</a>
+		<a class="card" href="/admin/products"><strong>{o.low_stock_variants}</strong>Low-stock variants</a>
+	</div>
+	<p class="muted">Counts use the store time zone ({store.timezone}) and low-stock threshold ({store.low_stock_threshold}).</p>
+</AdminLayout>

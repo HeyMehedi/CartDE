@@ -38,7 +38,16 @@ function sameOrigin(req: GuardRequest): boolean {
 	return origin !== null && origin === req.origin;
 }
 
+/** Public write endpoints: no login, but same-origin and the custom header are still required (FR-ADM-2). */
+export const isPublicWritePath = (pathname: string): boolean => pathname === "/api/cartde/checkout";
+
 export function decide(req: GuardRequest): GuardDecision {
+	if (isPublicWritePath(req.pathname)) {
+		if (!isSafeMethod(req.method) && (!sameOrigin(req) || req.header(CSRF_HEADER) !== "1")) {
+			return { action: "deny", status: 403, code: "csrf", message: "Cross-site request refused.", json: true };
+		}
+		return { action: "allow" };
+	}
 	if (!isProtectedPath(req.pathname)) return { action: "allow" };
 	const json = isApi(req.pathname);
 

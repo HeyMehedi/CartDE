@@ -1,27 +1,48 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { adminStore, mediaUrls, storefrontProducts } from "../../cartde/app/catalogue";
+import { adminCategories, adminStore, mediaUrls, storefrontProducts } from "../../cartde/app/catalogue";
 import { formatMoney } from "../../cartde/domain/money";
 
-const category = Astro.url.searchParams.get("category") ?? undefined;
-const [products, store] = await Promise.all([storefrontProducts(category), adminStore()]);
-const urls = await mediaUrls(products.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
+const category = Astro.url.searchParams.get("category") || undefined;
+const page = Math.max(1, Number(Astro.url.searchParams.get("page")) || 1);
+const [{ items, total, pageSize }, store, categories] = await Promise.all([storefrontProducts({ category, page }), adminStore(), adminCategories()]);
+const urls = await mediaUrls(items.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
+const pages = Math.max(1, Math.ceil(total / pageSize));
+const href = (n: number) => `/products?${new URLSearchParams({ ...(category ? { category } : {}), ...(n > 1 ? { page: String(n) } : {}) })}`;
+const canonical = new URL(href(page), Astro.url).toString();
 ---
 
-<Base title="Products">
-	<h1>Products</h1>
-	{products.length === 0 && <p>No products are available yet.</p>}
-	<ul style="list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(12rem,1fr));gap:1rem">
+<Base title="Shop" canonical={canonical}>
+	<h1>Shop</h1>
+	{
+		categories.length > 0 && (
+			<ul class="cd-chips" aria-label="Categories">
+				<li><a href="/products" aria-current={!category ? "true" : undefined}>All</a></li>
+				{categories.map((c) => <li><a href={`/products?category=${c.slug}`} aria-current={category === c.slug ? "true" : undefined}>{c.name}</a></li>)}
+			</ul>
+		)
+	}
+	{items.length === 0 && <p class="cd-muted">No products are available yet.</p>}
+	<ul class="cd-grid">
 		{
-			products.map((p) => (
-				<li>
+			items.map((p) => (
+				<li class="cd-card">
 					<a href={`/products/${p.slug}`}>
-						{p.featured_media_id && urls.get(p.featured_media_id) && <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" />}
+						{p.featured_media_id && urls.get(p.featured_media_id) ? <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" /> : <div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />}
 						<div>{p.name}</div>
-						<div>{formatMoney(p.price_minor, store.currency, store.locale)}</div>
+						<div class="cd-price">{formatMoney(p.price_minor, store.currency, store.locale)}</div>
 					</a>
 				</li>
 			))
 		}
 	</ul>
+	{
+		pages > 1 && (
+			<nav class="cd-pager" aria-label="Pagination">
+				{page > 1 && <a href={href(page - 1)} rel="prev">← Newer</a>}
+				<span>Page {page} of {pages}</span>
+				{page < pages && <a href={href(page + 1)} rel="next">Older →</a>}
+			</nav>
+		)
+	}
 </Base>

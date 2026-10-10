@@ -20,33 +20,70 @@ const variants = product.variants.filter((v) => v.status === "active" || preview
 const prices = variants.map((v) => v.price_minor);
 const from = Math.min(...prices);
 const to = Math.max(...prices);
+const first = variants.find((v) => v.stock_qty > 0) ?? variants[0]!;
+const images = product.media.flatMap((m) => (urls.get(m.media_id) ? [{ url: new URL(urls.get(m.media_id)!, Astro.url).toString(), alt: m.alt }] : []));
+const canonical = new URL(`/products/${product.slug}`, Astro.url).toString();
+const plain = product.description_md.replace(/[*_`#>\[\]()-]/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
+const inStock = variants.some((v) => v.stock_qty > 0);
+const offer = (price: number) => ({ "@type": "Offer", price: (price / 100).toFixed(2), priceCurrency: store.currency, availability: `https://schema.org/${inStock ? "InStock" : "OutOfStock"}`, url: canonical });
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "Product",
+	name: product.name,
+	description: product.seo_description || plain || undefined,
+	image: images.map((i) => i.url),
+	sku: first.sku ?? undefined,
+	offers: from === to ? offer(from) : { "@type": "AggregateOffer", lowPrice: (from / 100).toFixed(2), highPrice: (to / 100).toFixed(2), priceCurrency: store.currency, offerCount: variants.length, availability: `https://schema.org/${inStock ? "InStock" : "OutOfStock"}` },
+};
+const ld = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
+const clientData = JSON.stringify({
+	currency: store.currency, locale: store.locale, lowStock: store.low_stock_threshold,
+	options: product.options.map((o) => ({ name: o.name, values: o.values.map((v) => v.value) })),
+	variants: variants.map((v) => ({ id: v.id, title: v.title, values: v.option_values, price: v.price_minor, compare: v.compare_at_minor, stock: v.stock_qty })),
+}).replace(/</g, "\\u003c");
 ---
 
-<Base title={product.seo_title || product.name} description={product.seo_description}>
-	{preview && <p role="status"><strong>Preview:</strong> this product is {product.status} and visible only to administrators.</p>}
-	<h1>{product.name}</h1>
-	<div>
-		{product.media.map((m) => urls.get(m.media_id) && <img src={urls.get(m.media_id)} alt={m.alt} style="max-width:100%;height:auto" />)}
+<Base title={product.seo_title || product.name} description={product.seo_description || plain || null} canonical={canonical} image={images[0]?.url ?? null}>
+	<Fragment slot="head">
+		{preview && <meta name="robots" content="noindex" />}
+		<script type="application/ld+json" set:html={ld} />
+	</Fragment>
+	{preview && <p role="status" class="cd-alert"><strong>Preview:</strong> this product is {product.status} and visible only to administrators.</p>}
+	<div class="cd-split">
+		<div>
+			{images.map((i) => <img src={i.url} alt={i.alt} style="margin-bottom:.5rem" />)}
+		</div>
+		<div id="product" data-variant={first.id}>
+			<h1>{product.name}</h1>
+			<p class="cd-price" id="price">{from === to ? money(from) : `${money(from)} – ${money(to)}`}</p>
+			<script type="application/json" id="product-data" set:html={clientData} />
+			<div id="options" hidden></div>
+			<p id="stock" role="status" class="cd-muted">{inStock ? "In stock" : "Out of stock"}</p>
+			<p id="add-msg" role="status" class="cd-muted"></p>
+			<button type="button" class="cd-btn" id="add" disabled={!inStock || preview}>Add to cart</button>
+			<noscript><p class="cd-muted">Enable JavaScript to use the cart.</p></noscript>
+			<div set:html={renderMarkdown(product.description_md)} />
+			{
+				variants.length > 1 && (
+					<table class="cd-table">
+						<caption class="cd-muted">All options</caption>
+						<thead><tr><th>Option</th><th>Price</th><th>Availability</th></tr></thead>
+						<tbody>
+							{variants.map((v) => (
+								<tr>
+									<td>{v.title}</td>
+									<td>{money(v.price_minor)}{v.compare_at_minor && v.compare_at_minor > v.price_minor && <s class="cd-muted"> {money(v.compare_at_minor)}</s>}</td>
+									<td>{v.stock_qty > 0 ? "In stock" : "Out of stock"}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)
+			}
+		</div>
 	</div>
-	<p><strong>{from === to ? money(from) : `${money(from)} – ${money(to)}`}</strong></p>
-	<div set:html={renderMarkdown(product.description_md)} />
-	{
-		variants.length > 1 || product.options.length > 0 ? (
-			<table>
-				<thead><tr><th>Option</th><th>Price</th><th>Availability</th></tr></thead>
-				<tbody>
-					{variants.map((v) => (
-						<tr>
-							<td>{v.title}</td>
-							<td>{money(v.price_minor)}{v.compare_at_minor && v.compare_at_minor > v.price_minor && <s> {money(v.compare_at_minor)}</s>}</td>
-							<td>{v.stock_qty > 0 ? "In stock" : "Out of stock"}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-		) : (
-			<p>{variants[0]!.stock_qty > 0 ? "In stock" : "Out of stock"}</p>
-		)
-	}
-	<p><em>Ordering opens in the next release.</em></p>
 </Base>
+
+<script>
+	import "../../cartde/client/product-page";
+</script>

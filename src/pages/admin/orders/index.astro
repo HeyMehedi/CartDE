@@ -1,0 +1,56 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { adminOrders, adminStore } from "../../../cartde/app/catalogue";
+import { ORDERS_PAGE_SIZE } from "../../../cartde/db/orders";
+import { ORDER_STATUSES } from "../../../cartde/domain/orders";
+import { formatMoney } from "../../../cartde/domain/money";
+
+const q = Astro.url.searchParams.get("q")?.trim() ?? "";
+const status = Astro.url.searchParams.get("status") ?? "";
+const page = Math.max(1, Number(Astro.url.searchParams.get("page")) || 1);
+const [{ items, total }, store] = await Promise.all([adminOrders({ q, status, page }), adminStore()]);
+const pages = Math.max(1, Math.ceil(total / ORDERS_PAGE_SIZE));
+const href = (n: number) => `/admin/orders?${new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}), page: String(n) })}`;
+const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeStyle: "short", timeZone: store.timezone });
+---
+
+<AdminLayout title="Orders" active="orders">
+	<h1>Orders</h1>
+	<form method="get" class="row">
+		<div><label for="q">Search (number, phone, name)</label><input id="q" name="q" type="text" value={q} /></div>
+		<div>
+			<label for="status">Status</label>
+			<select id="status" name="status">
+				<option value="">All</option>
+				{ORDER_STATUSES.map((s) => <option value={s} selected={status === s}>{s}</option>)}
+			</select>
+		</div>
+		<button type="submit">Filter</button>
+	</form>
+	{
+		items.length === 0 ? (
+			<p class="muted">No orders match.</p>
+		) : (
+			<div class="scroll">
+				<table>
+					<thead><tr><th>Order</th><th>Placed</th><th>Customer</th><th>Phone</th><th>Status</th><th>Total</th></tr></thead>
+					<tbody>
+						{items.map((o) => (
+							<tr>
+								<td><a href={`/admin/orders/${o.id}`}>#{o.order_number}</a></td>
+								<td>{when.format(new Date(o.placed_at))}</td>
+								<td>{o.customer_name}</td>
+								<td>{o.customer_phone}</td>
+								<td>{o.status}</td>
+								<td>{formatMoney(o.total_minor, o.currency, store.locale)}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		)
+	}
+	<p>
+		{page > 1 && <a href={href(page - 1)}>← Previous</a>} Page {page} of {pages} ({total} orders) {page < pages && <a href={href(page + 1)}>Next →</a>}
+	</p>
+</AdminLayout>
