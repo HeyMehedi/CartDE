@@ -41,7 +41,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       # A throwaway key for the local dev server only; never a production secret.
-      - run: echo "EMDASH_ENCRYPTION_KEY=$(openssl rand -base64 32)" > .env
+      - run: pnpm exec emdash secrets generate --write .env
       - run: pnpm db:migrate
       - run: pnpm test:e2e
         env:

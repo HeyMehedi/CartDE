@@ -66,7 +66,8 @@ The first request after a fresh deploy can take about 45 seconds while EmDash in
 Set with Wrangler or the Cloudflare dashboard. Never put them in `wrangler.jsonc` or in git.
 
 ```bash
-pnpm wrangler secret put EMDASH_ENCRYPTION_KEY   # generate one: openssl rand -base64 32
+pnpm exec emdash secrets generate                # prints emdash_enc_v1_…; paste it into the next command
+pnpm wrangler secret put EMDASH_ENCRYPTION_KEY
 pnpm wrangler secret put EMDASH_SITE_URL         # https://your-domain, no trailing slash
 ```
 
