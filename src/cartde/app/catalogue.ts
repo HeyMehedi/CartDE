@@ -1,5 +1,6 @@
 /** Application-layer entry point for pages: binds the D1 database and re-exports read operations. */
 import { env } from "cloudflare:workers";
+import { listAudit } from "../db/audit";
 import { listCategories } from "../db/categories";
 import { resolveMediaUrls } from "../db/media";
 import { getActiveProductBySlug, getProduct, listProducts, type ProductDetail } from "../db/products";
