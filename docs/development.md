@@ -31,4 +31,12 @@ These are the same checks CI runs. Automated tests are not yet written; the firs
 
 ## Upgrading EmDash
 
-EmDash is pinned to an exact version in `package.json` and the lockfile. Upgrade in a dedicated pull request, read the EmDash changelog, and run all checks.
+EmDash is an npm dependency, not copied source. `pnpm-lock.yaml` records the exact version. `package.json` uses caret ranges, so a routine `pnpm update` stays within the same major version.
+
+1. Preview without changing files: `npx upgrade-emdash@latest --dry-run`
+2. Apply: `npx upgrade-emdash@latest`. This bumps `emdash` and `@emdash-cms/cloudflare` together and writes `.emdash/UPGRADE.md` with the changelog and any new core migrations.
+3. Work through `.emdash/UPGRADE.md`, then run `pnpm typecheck`, `pnpm build` and `pnpm dev`.
+4. Test the admin, one public page and a media upload.
+5. Commit `package.json` and `pnpm-lock.yaml` in their own pull request.
+
+Before deploying an update that adds core migrations, take a database backup. EmDash's JSON export cannot restore a site. Use `--to next` or `--to beta` only for testing; production uses stable releases. A new major version (2.x) needs an explicit upgrade and its own review.
