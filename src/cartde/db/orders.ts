@@ -298,3 +298,47 @@ export async function overview(db: D1Database, dayStartIso: string) {
 	const n = (r: { results: unknown[] }) => (r.results[0] as { n: number }).n;
 	return { pending_orders: n(pending), orders_today: n(today), active_products: n(active), low_stock_variants: n(low) };
 }
+
+// ---------- reporting ----------
+
+export interface SalesSummary {
+	currency: string;
+	days: number;
+	since: string;
+	orders: number;
+	revenue_minor: number;
+	average_order_minor: number;
+	by_status: Record<string, number>;
+	top_products: { product_name: string; quantity: number; revenue_minor: number }[];
+}
+
+/** Revenue counts orders that are not cancelled or returned. */
+export async function salesSummary(db: D1Database, days: number, now: Date = new Date()): Promise<SalesSummary> {
+	const store = await getStore(db);
+	const since = new Date(now.getTime() - days * 86_400_000).toISOString();
+	const [byStatus, totals, top] = await db.batch([
+		db.prepare(`SELECT status, COUNT(*) AS n FROM cartde_orders WHERE placed_at >= ?1 GROUP BY status`).bind(since),
+		db.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(total_minor), 0) AS revenue FROM cartde_orders WHERE placed_at >= ?1 AND status NOT IN ('cancelled', 'returned')`).bind(since),
+		db.prepare(
+			`SELECT i.product_name, SUM(i.quantity) AS quantity, SUM(i.line_total_minor) AS revenue_minor
+			 FROM cartde_order_items i JOIN cartde_orders o ON o.id = i.order_id
+			 WHERE o.placed_at >= ?1 AND o.status NOT IN ('cancelled', 'returned')
+			 GROUP BY i.product_name ORDER BY quantity DESC, revenue_minor DESC LIMIT 5`,
+		).bind(since),
+	]);
+	const t = totals.results[0] as { n: number; revenue: number };
+	const by_status: Record<string, number> = {};
+	for (const r of byStatus.results as { status: string; n: number }[]) by_status[r.status] = r.n;
+	const orders = Object.values(by_status).reduce((a, b) => a + b, 0);
+	return {
+		currency: store.currency, days, since, orders, revenue_minor: t.revenue,
+		average_order_minor: t.n ? Math.round(t.revenue / t.n) : 0, by_status,
+		top_products: top.results as SalesSummary["top_products"],
+	};
+}
+
+export async function getOrderIdByNumber(db: D1Database, orderNumber: number): Promise<string> {
+	const row = await db.prepare(`SELECT id FROM cartde_orders WHERE order_number = ?1`).bind(orderNumber).first<{ id: string }>();
+	if (!row) throw new CartdeError("not_found", `Order #${orderNumber} not found.`);
+	return row.id;
+}

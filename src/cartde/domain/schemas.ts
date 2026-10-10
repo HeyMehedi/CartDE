@@ -118,3 +118,17 @@ export const orderTransitionInput = z.object({
 export const merchantNoteInput = z.object({ merchant_note: trimmed(2000).nullable() });
 
 export const setupInput = storeSettingsInput.extend({ with_demo_products: z.boolean().default(false) });
+
+export const discountDraftInput = z
+	.object({
+		code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,32}$/, "Use 3-32 letters, numbers, hyphens or underscores."),
+		kind: z.enum(["percent", "fixed"]),
+		/** Percent: 1-100. Fixed: minor units. */
+		value: z.number().int().min(1).max(1_000_000_000),
+		min_subtotal_minor: minor.default(0),
+		starts_at: z.iso.datetime().nullable().optional(),
+		ends_at: z.iso.datetime().nullable().optional(),
+		note: trimmed(500).nullable().optional(),
+	})
+	.refine((d) => d.kind !== "percent" || d.value <= 100, { message: "A percentage cannot exceed 100.", path: ["value"] })
+	.refine((d) => !d.starts_at || !d.ends_at || d.starts_at < d.ends_at, { message: "The end must be after the start.", path: ["ends_at"] });

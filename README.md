@@ -14,7 +14,7 @@ CartDE (Cart Digital Engine) is an open-source online store that you deploy to y
 | Storefront: home, product list (24 per page, category filter), product page with variant selector and Product JSON-LD, cart, cash-on-delivery checkout, order confirmation | Partial (milestone 0.3). Server logic is covered by automated tests and an HTTP smoke run; the browser screens have not been exercised in a real browser. |
 | Orders: placement with atomic stock decrement, idempotent retries, status workflow with stock restore, customers, printable summary | Partial (milestone 0.3). Same verification as above. |
 | First-run store setup (`/setup`), store-not-ready page, backup script, deployment and recovery guide | Implemented in code and tests (milestone 0.4). The deploy button and a clean-account install are untested. |
-| AI tools through MCP | Planned (milestone 0.5) |
+| AI tools through MCP (9 tools), activity log | Partial (milestone 0.5). Logic, permissions and audit are covered by tests; not yet tried with a live MCP client. See [docs/ai-tools.md](docs/ai-tools.md). |
 | Themes and extensions | Planned (milestone 0.6) |
 | Online payment gateways, courier and messaging integrations | Not planned for the initial releases |
 
@@ -58,6 +58,7 @@ The scaffold creates `.env` with a generated `EMDASH_ENCRYPTION_KEY` for local u
 - [docs/PRD.md](docs/PRD.md): product requirements
 - [docs/SRS.md](docs/SRS.md): software requirements and data model
 - [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md): milestones and decisions
+- [docs/ai-tools.md](docs/ai-tools.md): connecting AI clients and the tool safety design
 - [docs/architecture.md](docs/architecture.md), [docs/development.md](docs/development.md), [docs/deployment.md](docs/deployment.md)
 
 ## License

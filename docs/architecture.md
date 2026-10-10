@@ -18,6 +18,7 @@ CartDE is one Astro application with the EmDash integration.
 | `src/cartde/domain/` | Pure logic with no I/O: money, slugs, variants, inventory, Markdown, zod schemas |
 | `src/cartde/db/` | D1 repositories (store, categories, products, media lookup) |
 | `src/cartde/app/` | Application layer: access guard (`guard.ts`), API helpers (`http.ts`), page-facing reads (`catalogue.ts`) |
+| `src/cartde/mcp/tools.ts`, `src/cartde/plugin/` | AI tool registry and the EmDash plugin that exposes it (see ai-tools.md) |
 | `src/cartde/client/` | Browser scripts for the admin pages (not type-checked; see development.md) |
 | `src/middleware.ts` | Applies the guard to `/admin/*` and `/api/cartde/admin/*` after EmDash's auth middleware |
 | `src/pages/admin/`, `src/pages/api/cartde/admin/` | Commerce dashboard pages and JSON API (administrators only) |

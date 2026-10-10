@@ -1,0 +1,31 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { adminAudit, adminStore } from "../../cartde/app/catalogue";
+const [rows, store] = await Promise.all([adminAudit({ limit: 200 }), adminStore()]);
+const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeStyle: "medium", timeZone: store.timezone });
+---
+
+<AdminLayout title="Activity log" active="audit">
+	<h1>Activity log</h1>
+	<p class="muted">Every change made through the dashboard or by an AI tool. Personal details are never stored here. Showing the latest {rows.length}.</p>
+	{
+		rows.length === 0 ? <p class="muted">Nothing yet.</p> : (
+			<div class="scroll">
+				<table>
+					<thead><tr><th>When</th><th>Who</th><th>Action</th><th>Item</th><th>Details</th></tr></thead>
+					<tbody>
+						{rows.map((r) => (
+							<tr>
+								<td>{when.format(new Date(r.created_at))}</td>
+								<td>{r.actor_kind === "mcp" ? "AI tool" : "Dashboard"}{r.actor_user_id && <span class="muted"> · {r.actor_user_id.slice(-6)}</span>}</td>
+								<td>{r.action}</td>
+								<td>{r.entity}{r.entity_id && <span class="muted"> · {r.entity_id.length > 12 ? r.entity_id.slice(-8) : r.entity_id}</span>}</td>
+								<td><code>{r.payload_json ?? ""}</code></td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		)
+	}
+</AdminLayout>

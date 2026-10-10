@@ -167,6 +167,8 @@ Progress (2026-10-10): implemented `/setup`, setup detection and the "store not 
 
 ### 0.5 AI-ready commerce (L)
 
+Progress (2026-10-10): migration `0003_audit_discounts.sql`, audit writes for every admin mutation (enforced by a test), nine typed tools shared with the dashboard's repositories, a native in-repo plugin registered in `astro.config.mjs`, and `/admin/audit`. 137 automated tests pass. Verified against the running dev server: the plugin's routes exist and refuse unauthenticated calls. Not verified: a live MCP client through OAuth, and enabling the plugin's MCP surface in the EmDash admin. Decision recorded: the plugin is in-repo and native (ADR-5 held), and all tools require `settings:manage` because EmDash has no commerce permissions. Discounts are draft-only.
+
 - Application services formalised as typed operations with shared schemas.
 - Audit log table and writes for all admin mutations.
 - Native EmDash plugin registering read-only tools first (`search_products`, `list_orders`, `get_order_details`, `get_sales_summary`), then draft and mutation tools with confirmation flags.

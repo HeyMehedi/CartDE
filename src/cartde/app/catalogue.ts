@@ -59,3 +59,5 @@ export async function adminOverview() {
 	const store = await getStore(db());
 	return overview(db(), startOfDayUtc(store.timezone).toISOString());
 }
+
+export const adminAudit = (opts: Parameters<typeof listAudit>[1] = {}) => listAudit(db(), opts);
