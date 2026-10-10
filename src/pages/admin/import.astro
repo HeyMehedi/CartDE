@@ -1,0 +1,19 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { IMPORT_COLUMNS, MAX_IMPORT_ROWS } from "../../cartde/db/import";
+---
+
+<AdminLayout title="Import products" active="products">
+	<h1>Import products from CSV</h1>
+	<p>One row per variant. Rows with the same <code>slug</code> become one product. Prices are in normal units (for example <code>1250.50</code>). Products without a <code>status</code> are imported as drafts. Existing products are never changed. Up to {MAX_IMPORT_ROWS} rows per file.</p>
+	<p class="muted">Columns: <code>{IMPORT_COLUMNS.join(", ")}</code>. Only <code>name</code> and <code>price</code> are required.</p>
+	<div id="msg" role="alert" hidden class="error"></div>
+	<label for="file">CSV file</label>
+	<input id="file" type="file" accept=".csv,text/csv" />
+	<p><button type="button" id="check">Check file</button> <button type="button" id="run" disabled>Import</button></p>
+	<div id="report"></div>
+</AdminLayout>
+
+<script>
+	import "../../cartde/client/import";
+</script>

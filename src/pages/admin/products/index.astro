@@ -10,7 +10,7 @@ const [products, store] = await Promise.all([adminProducts({ search: q || undefi
 
 <AdminLayout title="Products" active="products">
 	<h1>Products</h1>
-	<p><a href="/api/cartde/admin/export/products.csv">Download CSV</a></p>
+	<p><a href="/api/cartde/admin/export/products.csv">Download CSV</a> · <a href="/admin/import">Import from CSV</a></p>
 	<form method="get" class="row">
 		<div><label for="q">Search</label><input id="q" name="q" type="text" value={q} /></div>
 		<div>
