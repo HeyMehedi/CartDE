@@ -17,8 +17,8 @@ export default [
 		},
 	},
 	{
-		files: ["*.mjs", "*.js"],
-		languageOptions: { globals: { URL: "readonly", process: "readonly" } },
+		files: ["*.mjs", "*.js", "scripts/**/*.mjs"],
+		languageOptions: { globals: { URL: "readonly", process: "readonly", console: "readonly" } },
 	},
 	{
 		// Browser scripts are excluded from type checking (see docs/development.md); allow their loose typing.
