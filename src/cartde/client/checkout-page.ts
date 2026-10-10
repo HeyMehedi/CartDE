@@ -62,7 +62,7 @@ form.addEventListener("submit", async (e) => {
 			if (res.status === 409) await loadSummary();
 			btn.disabled = false; return;
 		}
-		try { sessionStorage.removeItem(KEY_STORE); } catch {}
+		try { sessionStorage.removeItem(KEY_STORE); } catch { /* storage blocked: nothing to clear */ }
 		clearCart();
 		location.href = `/orders/${json.data.order_number}?t=${encodeURIComponent(json.data.access_token)}`;
 	} catch { errBox.hidden = false; errBox.textContent = t("checkout.network_error"); btn.disabled = false; }

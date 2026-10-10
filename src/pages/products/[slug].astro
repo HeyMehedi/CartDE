@@ -25,7 +25,7 @@ const to = Math.max(...prices);
 const first = variants.find((v) => v.stock_qty > 0) ?? variants[0]!;
 const images = product.media.flatMap((m) => (urls.get(m.media_id) ? [{ url: new URL(urls.get(m.media_id)!, Astro.url).toString(), alt: m.alt }] : []));
 const canonical = new URL(`/products/${product.slug}`, Astro.url).toString();
-const plain = product.description_md.replace(/[*_`#>\[\]()-]/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
+const plain = product.description_md.replace(/[*_`#>[\]()-]/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
 const inStock = variants.some((v) => v.stock_qty > 0);
 const offer = (price: number) => ({ "@type": "Offer", price: (price / 100).toFixed(2), priceCurrency: store.currency, availability: `https://schema.org/${inStock ? "InStock" : "OutOfStock"}`, url: canonical });
 const jsonLd = {

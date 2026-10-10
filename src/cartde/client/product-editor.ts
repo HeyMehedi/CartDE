@@ -16,7 +16,7 @@ const major = (minor: number | null) => (minor === null ? "" : (minor / 100).toF
 const val = (id: string) => ($(`#${id}`) as HTMLInputElement).value.trim();
 
 // ---- media ----
-let media: Media[] = (product?.media ?? []).map((m: Media) => ({ media_id: m.media_id, alt: m.alt, url: m.url }));
+const media: Media[] = (product?.media ?? []).map((m: Media) => ({ media_id: m.media_id, alt: m.alt, url: m.url }));
 function renderMedia() {
 	const ul = $("#media-list");
 	ul.replaceChildren(...media.map((m, i) => {

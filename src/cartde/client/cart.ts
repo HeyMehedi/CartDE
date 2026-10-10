@@ -7,7 +7,7 @@ const MAX_QTY = 20;
 
 function read() {
 	let raw = null;
-	try { raw = localStorage.getItem(KEY); } catch {}
+	try { raw = localStorage.getItem(KEY); } catch { /* storage blocked: fall back to the cookie */ }
 	if (raw === null) {
 		const m = document.cookie.split("; ").find((c) => c.startsWith(COOKIE + "="));
 		if (m) raw = decodeURIComponent(m.slice(COOKIE.length + 1));
