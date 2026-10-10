@@ -48,6 +48,7 @@ The scaffold creates `.env` with a generated `EMDASH_ENCRYPTION_KEY` for local u
 | `pnpm dev` | Local development server |
 | `pnpm typecheck` | Astro type checking |
 | `pnpm test` | Unit and database tests (Vitest) |
+| `pnpm lint` / `pnpm format` | ESLint / Prettier (CI runs `lint` and `format:check`) |
 | `pnpm db:migrate` | Apply CartDE migrations to the local database |
 | `pnpm db:bookmark` | Print the remote database's current Time Travel restore point |
 | `pnpm build` | Production build |
