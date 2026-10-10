@@ -156,7 +156,7 @@ Progress (2026-10-10): migration `0002_orders.sql`, domain (districts, phone, ca
 
 ### 0.4 Deployment experience (M)
 
-Progress (2026-10-10): implemented `/setup`, setup detection and the "store not ready" page, opt-in demo products, pause/reopen, the migrating `deploy` script, `db:export`, and the full deployment guide; 104 automated tests pass. Not done and cannot be done from here: testing from a clean Cloudflare account and a fresh GitHub fork, a rehearsed restore, and a one-time setup token (the first-admin window is documented instead). The deploy button targets `HeyMehedi/CartDE`, which does not exist yet.
+Progress (2026-10-10): implemented `/setup`, setup detection and the "store not ready" page, opt-in demo products, pause/reopen, the migrating `deploy` script, `db:bookmark` (Time Travel; `wrangler d1 export` was found not to work with EmDash's FTS5 tables), and the full deployment guide; 104 automated tests pass. Not done and cannot be done from here: testing from a clean Cloudflare account and a fresh GitHub fork, a rehearsed restore, and a one-time setup token (the first-admin window is documented instead). The deploy button targets `HeyMehedi/CartDE`, which does not exist yet.
 
 - README deploy button pointing at the public repository; `deploy` script running `wrangler d1 migrations apply DB --remote` then `wrangler deploy`.
 - Setup detection middleware; `/setup` step for store settings after the EmDash wizard; idempotency and resume.

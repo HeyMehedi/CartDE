@@ -15,7 +15,7 @@
     "typecheck": "astro check",
     "test": "vitest run",
     "db:migrate": "wrangler d1 migrations apply DB --local",
-    "db:export": "mkdir -p backups && wrangler d1 export DB --remote --output \"backups/cartde-$(date +%Y%m%d-%H%M%S).sql\""
+    "db:bookmark": "wrangler d1 time-travel info DB"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",

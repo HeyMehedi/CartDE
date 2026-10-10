@@ -10,6 +10,18 @@ Status: baseline deployed on 2026-10-10 to `https://cartde.heymehedi.workers.dev
 | `/_emdash/admin` | Redirects to `/_emdash/admin/setup`; setup wizard not yet completed. |
 | Not yet verified | Passkey setup, media upload, image rendering through the Images binding, CPU time per request. |
 
+### Deploy of milestones 0.2 to 0.6 (2026-10-10)
+
+| Step | Result |
+| --- | --- |
+| Restore point | `wrangler d1 time-travel info DB` bookmark `00000012-0000000e-00005100-c690e5531c6210c8bfbe3bc388a3c4ad` taken before migrating |
+| `pnpm deploy` | Applied migrations 0001 to 0004 to the remote D1 (19 `cartde_*` tables), built, deployed. Worker startup 23 ms. Upload 18,462 KiB (4,751 KiB gzip) |
+| Storefront (`/`, `/products`, `/cart`, `/checkout`, `/search`) | HTTP 503 "This store is not open yet" until `/setup` is completed, as designed. Repeated 4 times, consistent |
+| Admin pages and `/setup` | 302 to the EmDash login |
+| `/api/cartde/admin/*`, plugin routes | 401 without a session. Public checkout without the CSRF header: 403 |
+| EmDash wizard | `needsSetup:false`, so an administrator account exists |
+| Not done | CartDE `/setup` (needs the administrator), any authenticated check, CPU time measurement |
+
 ## Resources
 
 | Resource | Name | Created by |
@@ -77,28 +89,26 @@ The 0.6 build uploads 18,462 KiB uncompressed (4,751 KiB gzipped, measured by `w
 
 D1, R2 and Images free-tier limits are not yet recorded here. Record them with their check date before any free hosting claim is published.
 
-## Backups
+## Backups and restore
 
 Merchant data lives in three places. Back up all three.
 
 | What | How |
 | --- | --- |
-| Orders, products, customers, EmDash content and users (D1) | `pnpm db:export` writes `backups/cartde-<timestamp>.sql` using `wrangler d1 export`. The `backups/` directory is git-ignored because it contains customer data. |
-| Uploaded images (R2 bucket `cartde-media`) | Copy the bucket with `rclone` or `wrangler r2 object get`, or enable another copy in the Cloudflare dashboard. |
-| `EMDASH_ENCRYPTION_KEY` | Keep a copy in a password manager. |
+| Orders, products, customers, EmDash content and users (D1) | **D1 Time Travel** point-in-time restore, plus EmDash's own site export (see below) |
+| Uploaded images (R2 bucket `cartde-media`) | Copy the bucket with `rclone`, or enable another copy in the Cloudflare dashboard |
+| `EMDASH_ENCRYPTION_KEY` | Keep a copy in a password manager |
 
-EmDash also has its own site export; see its backup guide at https://docs.emdashcms.com/guides/backups/. Take a D1 export **before every deploy that adds a migration**.
-
-## Restore
-
-Rehearse this on a scratch Cloudflare database before you need it.
+**`wrangler d1 export` does not work on this database.** EmDash creates FTS5 search tables, and D1 refuses to export databases with virtual tables ("cannot export databases with virtual tables (like FTS5)"; seen on 2026-10-10). Use Time Travel instead:
 
 ```bash
-pnpm wrangler d1 create cartde-restore-test
-pnpm wrangler d1 execute cartde-restore-test --remote --file backups/cartde-<timestamp>.sql
+pnpm db:bookmark                                   # note the bookmark before every deploy that adds a migration
+pnpm wrangler d1 time-travel restore DB --bookmark=<bookmark>   # roll the database back to that moment
 ```
 
-To restore production, point `wrangler.jsonc` at the restored database (or empty the existing one), then redeploy. Restore the R2 objects into the bucket with the same keys, because product images reference EmDash media IDs.
+Time Travel retention depends on your Cloudflare plan; check the current figure at https://developers.cloudflare.com/d1/reference/time-travel/. It is a restore point inside Cloudflare, not a file you hold, so also use EmDash's site export for a copy you control (https://docs.emdashcms.com/guides/backups/). That export has not been tried against CartDE's tables: confirm that your `cartde_*` data is included before relying on it.
+
+A restore to a bookmark rolls back everything after it, including orders placed since. Rehearse on a scratch database first.
 
 ## Redeploying without losing data
 
@@ -120,5 +130,5 @@ To restore production, point `wrangler.jsonc` at the restored database (or empty
 - Deploy button from a clean Cloudflare account and a fresh GitHub fork.
 - Passkey setup, media upload and image rendering through the Images binding on the deployed Worker.
 - CPU time per request against the free-plan limit.
-- A rehearsed restore from a `db:export` file.
+- A rehearsed Time Travel restore, and EmDash's site export including `cartde_*` tables.
 - Behaviour of the 0.2 to 0.6 code on the deployed Worker. The deployed baseline is still the 0.1 code, and the remote database does not yet have the commerce migrations (`pnpm deploy` applies them).
