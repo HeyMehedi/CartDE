@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { env } from "cloudflare:workers";
 import { extensionRuntime } from "../cartde/app/extensions";
+import { checkoutAllowed, clientIp, type CheckoutLimiters } from "../cartde/app/ratelimit";
 import { storefrontContext } from "../cartde/app/storefront";
 import { getStore } from "../cartde/db/store";
 import { placeOrder, priceCart, quoteTotals } from "../cartde/db/orders";
@@ -39,7 +40,10 @@ if (isPost && single && ready) {
 		note: field("note") || null,
 		lines: [{ variant_id: v, quantity: q }],
 	});
-	if (parsed.success) {
+	if (parsed.success && !(await checkoutAllowed(env as unknown as CheckoutLimiters, clientIp(Astro.request), parsed.data.phone))) {
+		Astro.response.status = 429;
+		formError = "Too many order attempts. Please wait a minute and try again.";
+	} else if (parsed.success) {
 		try {
 			const placed = await placeOrder(env.DB, parsed.data, { extensions: await extensionRuntime(env.DB) });
 			return Astro.redirect(`/orders/${placed.order_number}?t=${encodeURIComponent(placed.access_token)}`, 303);

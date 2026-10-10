@@ -30,6 +30,7 @@ Status: baseline deployed on 2026-10-10 to `https://cartde.heymehedi.workers.dev
 | D1 database | `cartde-db` (binding `DB`) | First `wrangler deploy` (auto-provisioned) |
 | R2 bucket | `cartde-media` (binding `MEDIA`) | First `wrangler deploy` (auto-provisioned) |
 | KV namespace (sessions) | `cartde-session` | Added by the Astro adapter on deploy |
+| Rate limits | `CHECKOUT_IP_LIMITER` (60/min per IP), `CHECKOUT_PHONE_LIMITER` (5/min per phone) | Declared in `wrangler.jsonc`. Limits apply per Cloudflare location and are approximate; the docs do not say whether the binding is on the Free plan, so confirm on first deploy |
 
 ## Deploy with the button
 

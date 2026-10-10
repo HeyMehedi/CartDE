@@ -16,6 +16,11 @@
 			"bucket_name": "cartde-media",
 		},
 	],
+	// Checkout abuse damping (SRS NFR-1). Per Cloudflare location and approximate by design; see docs/deployment.md.
+	"ratelimits": [
+		{ "name": "CHECKOUT_IP_LIMITER", "namespace_id": "4801", "simple": { "limit": 60, "period": 60 } },
+		{ "name": "CHECKOUT_PHONE_LIMITER", "namespace_id": "4802", "simple": { "limit": 5, "period": 60 } },
+	],
 	// Sandboxed plugins require Worker Loader, available on Workers paid plans. Uncomment to enable:
 	// "worker_loaders": [{ "binding": "LOADER" }],
 	// General maintenance cron trigger
