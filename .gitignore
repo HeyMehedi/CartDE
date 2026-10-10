@@ -18,3 +18,7 @@ data.db
 
 # D1 exports contain merchant and customer data
 backups/
+
+# Playwright
+test-results/
+playwright-report/

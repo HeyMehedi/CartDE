@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Browser-only code (type checking is off for src/cartde/client; see product-editor.ts).
-import { $, api, showError } from "./api";
+import { $, api, labelInputs, showError } from "./api";
 
 const msg = $("#msg");
 const tbody = $("#cat-table tbody");
@@ -18,6 +18,7 @@ function render(categories) {
 		...categories.map((c) => {
 			const tr = document.createElement("tr");
 			tr.innerHTML = `<td><input class="n" type="text"></td><td><input class="s" type="text"></td><td><input class="o" type="text" size="3"></td><td><button type="button" class="sv">Save</button> <button type="button" class="rm">Delete</button></td>`;
+			labelInputs(tr, c.name, { n: "Name", s: "Slug", o: "Sort order" });
 			$("input.n", tr).value = c.name;
 			$("input.s", tr).value = c.slug;
 			$("input.o", tr).value = String(c.sort_order);

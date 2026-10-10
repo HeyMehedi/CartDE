@@ -5,7 +5,16 @@ import { clientMessages } from "../cartde/i18n/messages";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 const { t, lang } = await storefrontContext();
 const i18n = JSON.stringify(
-	clientMessages(lang, ["cart.empty", "cart.browse", "cart.load_error", "cart.remove", "cart.quantity_for"]),
+	clientMessages(lang, [
+		"cart.empty",
+		"cart.browse",
+		"cart.load_error",
+		"cart.remove",
+		"cart.quantity_for",
+		"cart.price",
+		"cart.quantity",
+		"cart.total",
+	]),
 ).replace(/</g, "\\u003c");
 ---
 
@@ -16,8 +25,8 @@ const i18n = JSON.stringify(
 		{t("cart.loading")}
 	</div>
 	<div id="cart-wrap" hidden>
-		<div style="overflow-x:auto">
-			<table class="cd-table">
+		<div class="cd-scroll" tabindex="0" role="region" aria-label={t("cart.title")}>
+			<table class="cd-table cd-stack">
 				<thead>
 					<tr>
 						<th>{t("cart.item")}</th>
@@ -52,17 +61,6 @@ const i18n = JSON.stringify(
 		<p>{t("cart.needs_js")}</p>
 	</noscript>
 </Base>
-
-<style is:global>
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip: rect(0 0 0 0);
-		white-space: nowrap;
-	}
-</style>
 
 <script>
 	import "../cartde/client/cart-page";

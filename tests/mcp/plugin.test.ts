@@ -44,3 +44,29 @@ describe("CartDE EmDash plugin", () => {
 		}
 	});
 });
+
+import { toRouteError } from "../../src/cartde/plugin";
+import { CartdeError } from "../../src/cartde/db/util";
+import { ToolInputError } from "../../src/cartde/mcp/tools";
+
+describe("tool errors become EmDash route errors (so MCP results carry isError)", () => {
+	it("maps domain and input errors to status codes", () => {
+		expect(toRouteError("t", new CartdeError("conflict", "nope"))).toMatchObject({
+			name: "PluginRouteError",
+			code: "CONFLICT",
+			status: 409,
+			message: "nope",
+		});
+		expect(toRouteError("t", new CartdeError("not_found", "x"))).toMatchObject({ status: 404 });
+		expect(toRouteError("t", new CartdeError("invalid", "x", { delta: "bad" }))).toMatchObject({
+			status: 422,
+			details: { fields: { delta: "bad" } },
+		});
+		expect(toRouteError("t", new ToolInputError({ a: "b" }))).toMatchObject({ status: 400, code: "INVALID_INPUT" });
+	});
+	it("hides unexpected errors", () => {
+		const e = toRouteError("t", new Error("SQLITE secret detail"));
+		expect(e).toMatchObject({ status: 500 });
+		expect(e.message).not.toContain("SQLITE");
+	});
+});

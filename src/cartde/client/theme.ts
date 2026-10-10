@@ -15,7 +15,12 @@ $("#seo-suffix").value = theme.seo.title_suffix;
 $("#seo-desc").value = theme.seo.default_description;
 
 const el = (tag, props = {}, ...kids) => {
-	const e = Object.assign(document.createElement(tag), props);
+	const e = document.createElement(tag);
+	for (const [k, v] of Object.entries(props)) {
+		// Hyphenated names (aria-*, data-*) are attributes, not DOM properties.
+		if (k.includes("-")) e.setAttribute(k, String(v));
+		else e[k] = v;
+	}
 	e.append(...kids);
 	return e;
 };

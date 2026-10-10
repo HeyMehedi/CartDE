@@ -3,7 +3,7 @@
 	color-scheme: light dark;
 	--cd-bg: Canvas;
 	--cd-fg: CanvasText;
-	--cd-muted: color-mix(in srgb, CanvasText 62%, Canvas);
+	--cd-muted: color-mix(in srgb, CanvasText 70%, Canvas);
 	--cd-line: color-mix(in srgb, CanvasText 16%, Canvas);
 	--cd-accent: #0b6b4f;
 	--cd-accent-fg: #fff;
@@ -235,4 +235,53 @@ textarea:focus-visible {
 	border: 1px solid var(--cd-line);
 	border-radius: var(--cd-radius);
 	padding: 1rem 1.25rem;
+}
+
+/* Visually hidden but readable by screen readers. Pinned to the top-left so it can never widen the page. */
+.sr-only {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+.cd-scroll {
+	overflow-x: auto;
+	position: relative;
+	max-width: 100%;
+}
+/* Tables marked .cd-stack become labelled cards on narrow screens (SRS NFR-7). */
+@media (max-width: 40rem) {
+	.cd-stack thead {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.cd-stack,
+	.cd-stack tbody,
+	.cd-stack tr,
+	.cd-stack td {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.cd-stack tr {
+		border-bottom: 1px solid var(--cd-line);
+		padding: 0.5rem 0;
+	}
+	.cd-stack td {
+		border: 0;
+		padding: 0.2rem 0;
+	}
+	.cd-stack td[data-label]::before {
+		content: attr(data-label) ": ";
+		color: var(--cd-muted);
+	}
 }

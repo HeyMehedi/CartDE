@@ -101,6 +101,24 @@ export function contrastRatio(a: string, b: string): number {
 }
 export const MIN_CONTRAST = 4.5; // WCAG 2.1 AA for body text
 
+/** Share of the text colour in secondary ("muted") text; the rest is background. */
+export const MUTED_MIX = 0.7;
+
+/** `p` of colour `a` mixed with `1 - p` of colour `b`, as hex. */
+export function mixHex(a: string, b: string, p: number): string {
+	const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+	return (
+		"#" +
+		[0, 1, 2]
+			.map((i) =>
+				Math.round(ch(a, i) * p + ch(b, i) * (1 - p))
+					.toString(16)
+					.padStart(2, "0"),
+			)
+			.join("")
+	);
+}
+
 export type ThemeSettings = z.infer<typeof themeShape>;
 
 export interface EffectiveTheme {
@@ -142,6 +160,12 @@ export const themeSettingsInput = themeShape.superRefine((s, ctx) => {
 			path: ["colors", "fg"],
 			message: `Text and background need a contrast ratio of at least ${MIN_CONTRAST}:1 (WCAG AA).`,
 		});
+	} else if (t.bg && t.fg && contrastRatio(mixHex(t.fg, t.bg, MUTED_MIX), t.bg) < MIN_CONTRAST) {
+		ctx.addIssue({
+			code: "custom",
+			path: ["colors", "fg"],
+			message: `Secondary text (a lighter shade of your text colour) would not reach ${MIN_CONTRAST}:1. Choose a darker text colour or a lighter background.`,
+		});
 	}
 	if (t.bg && contrastRatio(t.bg, t.accent) < 3) {
 		ctx.addIssue({
@@ -170,6 +194,6 @@ export function themeCss(s: ThemeSettings): string {
 	// "html:root" outranks the base stylesheet's ":root", so the order of the stylesheets does not matter.
 	let css = `html:root{${vars.join(";")}}`;
 	if (t.bg && t.fg)
-		css += `html:root{color-scheme:light;--cd-bg:${t.bg};--cd-fg:${t.fg};--cd-muted:color-mix(in srgb,${t.fg} 62%,${t.bg});--cd-line:color-mix(in srgb,${t.fg} 16%,${t.bg})}`;
+		css += `html:root{color-scheme:light;--cd-bg:${t.bg};--cd-fg:${t.fg};--cd-muted:${mixHex(t.fg, t.bg, MUTED_MIX)};--cd-line:${mixHex(t.fg, t.bg, 0.16)}}`;
 	return css;
 }

@@ -84,6 +84,9 @@ async function render() {
 				render();
 			};
 			rm.append(b);
+			price.dataset.label = t("cart.price");
+			qty.dataset.label = t("cart.quantity");
+			total.dataset.label = t("cart.total");
 			tr.append(name, price, qty, total, rm);
 			return tr;
 		}),

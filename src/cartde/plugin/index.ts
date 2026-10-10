@@ -6,7 +6,7 @@
  * Permission: EmDash's permission list has no commerce entries, so every tool requires `settings:manage` (Admin role).
  * Orders contain customer contact details, so nothing here is available below Admin.
  */
-import { definePlugin } from "emdash";
+import { definePlugin, PluginRouteError } from "emdash";
 import { extensionRuntime } from "../app/extensions";
 import { buildAdminBlocks } from "./admin-page";
 import { pageSlugDecision } from "./slug-policy";
@@ -44,16 +44,24 @@ const routes = Object.fromEntries(
 						),
 					};
 				} catch (err) {
-					if (err instanceof ToolInputError)
-						return { ok: false, error: { code: "invalid_input", message: err.message, fields: err.fields } };
-					if (err instanceof CartdeError) return { ok: false, error: { code: err.code, message: err.message, fields: err.fields } };
-					console.error("cartde tool error", name, err instanceof Error ? err.message : err);
-					return { ok: false, error: { code: "internal", message: "Something went wrong." } };
+					// Thrown, not returned: EmDash turns a PluginRouteError into an HTTP error and an MCP result with
+					// isError: true, so an AI client cannot mistake a refusal for success.
+					throw toRouteError(name, err);
 				}
 			},
 		},
 	]),
 );
+
+const STATUS = { invalid: 422, not_found: 404, conflict: 409, forbidden: 403 } as const;
+
+export function toRouteError(tool: string, err: unknown): PluginRouteError {
+	if (err instanceof ToolInputError) return new PluginRouteError("INVALID_INPUT", "Invalid tool input.", 400, { fields: err.fields });
+	if (err instanceof CartdeError)
+		return new PluginRouteError(err.code.toUpperCase(), err.message, STATUS[err.code], err.fields ? { fields: err.fields } : undefined);
+	console.error("cartde tool error", tool, err instanceof Error ? err.message : err);
+	return PluginRouteError.internal("Something went wrong.");
+}
 
 /** Block Kit page shown under "CartDE" in EmDash's sidebar. Private route: EmDash checks the permission first. */
 const adminRoute = {

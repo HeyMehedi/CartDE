@@ -75,6 +75,18 @@ describe("theme settings", () => {
 	});
 });
 
+describe("muted text contrast", () => {
+	it("every preset's secondary text meets AA", async () => {
+		const { mixHex, MUTED_MIX } = await import("../../src/cartde/domain/theme");
+		for (const p of Object.values(PRESETS))
+			if (p.bg && p.fg) expect(contrastRatio(mixHex(p.fg, p.bg, MUTED_MIX), p.bg)).toBeGreaterThanOrEqual(4.5);
+	});
+	it("refuses a text colour that only just passes, because muted text would fail", () => {
+		expect(themeSettingsInput.safeParse({ colors: { bg: "#ffffff", fg: "#767676" } }).success).toBe(false); // 4.54:1 text, muted below 4.5
+		expect(themeSettingsInput.safeParse({ colors: { bg: "#ffffff", fg: "#333333" } }).success).toBe(true);
+	});
+});
+
 describe("themeCss", () => {
 	it("emits only validated tokens", () => {
 		const css = themeCss(themeSettingsInput.parse({ preset: "warm", colors: { accent: "#7c2d12" }, radius: "sharp" }));

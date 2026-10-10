@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Browser-only code. The project's generated workerd globals (worker-configuration.d.ts) conflict with the
 // DOM lib, so this file is excluded from type checking; it is covered by manual and (from 0.3) Playwright tests.
-import { $, $$, api, showError } from "./api";
+import { $, $$, api, labelInputs, showError } from "./api";
 import { parseMajorToMinor } from "../domain/money";
 import { variantCombinations } from "../domain/variants";
 
@@ -51,6 +51,7 @@ function renderMedia() {
 			}
 			const alt = document.createElement("input");
 			alt.type = "text";
+			alt.setAttribute("aria-label", "Image alt text");
 			alt.placeholder = "Alt text";
 			alt.value = m.alt;
 			alt.maxLength = 300;
@@ -160,6 +161,13 @@ function buildVariants() {
 			tr.dataset.key = key;
 			tr.dataset.values = JSON.stringify(values);
 			tr.innerHTML = `<td></td><td><input class="p" inputmode="decimal"></td><td><input class="c" inputmode="decimal"></td><td><input class="s"></td><td><input class="q" inputmode="numeric" value="0"></td><td><input class="a" type="checkbox" checked></td>`;
+			labelInputs(tr, values.length ? values.join(" / ") : "Default", {
+				p: "Price",
+				c: "Compare-at price",
+				s: "SKU",
+				q: "Stock",
+				a: "Active",
+			});
 			tr.firstElementChild!.textContent = values.length ? values.join(" / ") : "Default";
 			return tr;
 		}),
@@ -171,6 +179,7 @@ if (mode === "create") {
 		const d = document.createElement("div");
 		d.className = "row option-row";
 		d.innerHTML = `<div><label>Option name</label><input class="on" type="text" placeholder="Size" maxlength="60"></div><div><label>Values (comma separated)</label><input class="ov" type="text" placeholder="S, M, L"></div>`;
+		labelInputs(d, "", { on: "Option name", ov: "Option values, comma separated" });
 		$("#options").append(d);
 	};
 	$("#option-add").onclick = addOption;
@@ -246,6 +255,7 @@ if (mode === "edit") {
 			...variants.map((v) => {
 				const tr = document.createElement("tr");
 				tr.innerHTML = `<td></td><td><input class="p" value="${major(v.price_minor)}"></td><td><input class="c" value="${major(v.compare_at_minor)}"></td><td><input class="s"></td><td><input class="a" type="checkbox"></td><td><strong class="q"></strong> <input class="d" placeholder="± qty" size="5"> <input class="n" placeholder="note" size="10"> <button type="button" class="adj">Adjust</button></td><td><button type="button" class="sv">Save</button> <button type="button" class="rm">Delete</button></td>`;
+				labelInputs(tr, v.title, { p: "Price", c: "Compare-at price", s: "SKU", a: "Active", d: "Stock change", n: "Stock change note" });
 				tr.children[0]!.textContent = v.title;
 				($("input.s", tr) as HTMLInputElement).value = v.sku ?? "";
 				($("input.a", tr) as HTMLInputElement).checked = v.status === "active";

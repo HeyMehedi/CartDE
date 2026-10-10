@@ -150,20 +150,20 @@ const data = JSON.stringify({ mode, product: product ?? null, currency }).replac
 			<div class="row" id="variant-add">
 				{product.options.map((o) => (
 					<div>
-						<label>{o.name}</label>
-						<input type="text" data-option-value maxlength="80" />
+						<label for={`nv-opt-${o.id}`}>{o.name}</label>
+						<input id={`nv-opt-${o.id}`} type="text" data-option-value maxlength="80" />
 					</div>
 				))}
 				<div>
-					<label>Price</label>
+					<label for="nv-price">Price</label>
 					<input type="text" id="nv-price" inputmode="decimal" />
 				</div>
 				<div>
-					<label>SKU</label>
+					<label for="nv-sku">SKU</label>
 					<input type="text" id="nv-sku" />
 				</div>
 				<div>
-					<label>Stock</label>
+					<label for="nv-stock">Stock</label>
 					<input type="text" id="nv-stock" inputmode="numeric" value="0" />
 				</div>
 				<button type="button" id="nv-add">

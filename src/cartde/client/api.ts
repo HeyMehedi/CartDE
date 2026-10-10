@@ -31,3 +31,11 @@ export function showError(el: HTMLElement, err: unknown) {
 		(fields.length ? " " + fields.map(([k, v]) => `${k}: ${v}`).join("; ") : "");
 	el.hidden = false;
 }
+
+/** Give inputs built in table rows an accessible name, e.g. "Price, M" (SRS NFR-6). */
+export function labelInputs(root, rowName, labels) {
+	for (const [cls, label] of Object.entries(labels)) {
+		const el = root.querySelector(`.${cls}`);
+		if (el) el.setAttribute("aria-label", rowName ? `${label}, ${rowName}` : label);
+	}
+}

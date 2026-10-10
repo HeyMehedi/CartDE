@@ -164,5 +164,14 @@ const links = [
 		<main class="admin">
 			<slot />
 		</main>
+		<script>
+			// Scrollable tables must be reachable by keyboard (WCAG 2.1.1): make each one a focusable, named region.
+			for (const box of document.querySelectorAll<HTMLElement>(".scroll")) {
+				box.tabIndex = 0;
+				box.setAttribute("role", "region");
+				const heading = box.previousElementSibling?.closest("h1,h2,h3")?.textContent?.trim();
+				box.setAttribute("aria-label", heading ? `${heading} (scrollable)` : "Table (scrollable)");
+			}
+		</script>
 	</body>
 </html>
