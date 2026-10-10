@@ -124,9 +124,13 @@ const links = [
 			.admin fieldset {
 				border: 1px solid var(--line);
 				margin: 1rem 0;
+				/* Fieldsets default to min-width: min-content, which lets a wide table stretch the page on phones. */
+				min-width: 0;
 			}
 			.admin .scroll {
 				overflow-x: auto;
+				position: relative;
+				max-width: 100%;
 			}
 			.admin .cards {
 				display: grid;

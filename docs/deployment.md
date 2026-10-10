@@ -85,9 +85,11 @@ CartDE's tables are created by numbered files in `migrations/`, tracked by Wrang
 
 **Security window.** From the first deploy until the EmDash wizard is finished, whoever opens the admin URL first can become the administrator. Complete the wizard right after deploying, or put the site behind Cloudflare Access until you have. If you suspect someone else got there first, delete the D1 database and R2 bucket and redeploy.
 
-`/setup` requires an administrator, is safe to run again, and records `setup_completed_at` only the first time. Demo products are added only if you tick the box and the catalogue is empty. Nothing in CartDE can reset or reseed a store.
+`/setup` requires an administrator, is safe to run again, and records `setup_completed_at` only the first time.
 
-## Free plan fit (limits checked 2026-10-10; CPU time not yet measured)
+**Setup token: evaluated, not built (plan 0.4).** A CartDE token cannot close the window, because the first administrator is created by EmDash's own wizard, before any CartDE code is involved, and EmDash 1.2 has no hook to gate it. The supported options are: complete the wizard immediately after deploying (done on this site on 2026-10-10), or protect `/_emdash/*` with Cloudflare Access until you have (see "Cloudflare Access" in the EmDash authentication guide). The development-only sign-in bypass is refused in production (`403`, checked 2026-10-10). Demo products are added only if you tick the box and the catalogue is empty. Nothing in CartDE can reset or reseed a store.
+
+## Free plan fit (limits checked and CPU measured 2026-10-10)
 
 Figures below were read from Cloudflare's documentation on 2026-10-10. They change; re-check before relying on them.
 
@@ -102,9 +104,30 @@ Figures below were read from Cloudflare's documentation on 2026-10-10. They chan
 | R2 | 10 GB-month storage, 1 million Class A and 10 million Class B operations per month, free egress | https://developers.cloudflare.com/r2/pricing/ |
 | Images transformations | 5,000 unique per month. The docs do not say outright whether the Images *binding* counts against this; assume it does | https://developers.cloudflare.com/images/pricing/ |
 
-**What this means for a shop.** Storage and request volumes in these tables suit a small store. The open risk is the **10 ms CPU limit**: EmDash, server rendering and the checkout batch all run in the Worker, and a request that exceeds the limit fails. I have not measured CPU time per request on the deployed Worker (wall-clock times of 0.4 to 1 s include network and database latency and say nothing about CPU). Until it is measured with `wrangler tail` or the Workers dashboard under real traffic, the README makes no "free hosting" claim, and the supported assumption is the **Workers Paid plan** (also needed for sandboxed plugins).
+### Measured CPU time on the deployed Worker
 
-D1 write limits matter at checkout: each order writes roughly 12 to 20 rows (stock updates, order, items, events, customer), so the 100,000 daily write limit allows on the order of 5,000 orders a day before other writes.
+Measured with `wrangler tail --format json` on 2026-10-10 against https://cartde.heymehedi.workers.dev: 6 GET requests per path from one client, a store with no products yet. `cpuTime` and `wallTime` are Cloudflare's own figures for each invocation.
+
+| Path | CPU median | CPU max | Wall time median |
+| --- | --- | --- | --- |
+| `/` (home: settings, menus, posts, products, theme, extensions) | 16 ms | 108 ms (cold start) | 302 ms |
+| `/products` | 14 ms | 64 ms | 187 ms |
+| `/posts` (EmDash) | 13 ms | 32 ms | 145 ms |
+| `/checkout` | 11 ms | 17 ms | 114 ms |
+| `/cart` | 10 ms | 22 ms | 68 ms |
+| `/search?q=tee` | 9 ms | 38 ms | 118 ms |
+| `/nope` (404) | 8 ms | 21 ms | 122 ms |
+| `/sitemap-products.xml` | 4 ms | 7 ms | 57 ms |
+| `/robots.txt` | 3 ms | 30 ms | 58 ms |
+| Cron (EmDash maintenance, every minute) | 14 ms | 14 ms | 297 ms |
+
+**Conclusion: CartDE does not fit the Workers Free plan's 10 ms CPU limit.** Most page renders take 10 to 16 ms of CPU at the median, and cold starts reach 108 ms. Every request above completed with outcome `ok`, but a Free-plan Worker that exceeds its CPU limit can be stopped with an error, so a shop should not rely on it. **Run CartDE on the Workers Paid plan** (30 s default CPU limit). The Free plan remains fine for trying it out.
+
+This contradicts PRD §7 ("Runs on the Cloudflare Workers free plan by default") and SRS NFR-10; see docs/traceability.md. Most of the CPU is EmDash's runtime (`/posts`, which runs no CartDE code, costs 13 ms), so the fix is not in CartDE alone.
+
+**Server time (SRS NFR-5, target under 200 ms at p95).** Not met for the home page (302 ms median wall time); `/products` is at 187 ms median. Wall time includes waiting for D1. The home page makes the most queries; caching it with Astro's route cache, or trimming its sections, are the next steps. A load test with 1,000 products has not been done.
+
+**D1 writes.** Each order writes roughly 12 to 20 rows (stock updates, order, items, events, customer), so the Free plan's 100,000 daily writes allow on the order of 5,000 orders a day before other writes.
 
 ## Backups and restore
 
@@ -157,7 +180,7 @@ This rolls back everything after the bookmark, including orders placed since; Wr
 
 ## Not yet verified
 
-- Deploy button from a clean Cloudflare account and a fresh GitHub fork.
-- Passkey setup, media upload and image rendering through the Images binding on the deployed Worker.
-- CPU time per request against the 10 ms free-plan limit.
-- Behaviour of the 0.2 to 0.6 code on the deployed Worker. The deployed baseline is still the 0.1 code, and the remote database does not yet have the commerce migrations (`pnpm deploy` applies them).
+- The deploy button from a clean Cloudflare account and a fresh GitHub fork: the repository is not public yet.
+- Product images served through the Images binding on the deployed Worker (media upload and product images were verified locally by the end-to-end tests).
+- Copying the R2 bucket.
+- A load test with 1,000 products (SRS NFR-5).

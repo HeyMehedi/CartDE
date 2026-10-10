@@ -80,3 +80,34 @@ test("admin pages", async () => {
 		expect(await scan(admin), path).toEqual([]);
 	}
 });
+
+test("admin pages fit a 360 px screen (SRS NFR-7)", async ({ browser }) => {
+	const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, baseURL: "http://localhost:4321" });
+	const page = await ctx.newPage();
+	await signIn(page, "/admin");
+	const products = await adminApi<{ id: string }[]>(page.request, "GET", "/products");
+	const orders = await adminApi<{ items: { id: string }[] }>(page.request, "GET", "/orders");
+	const paths = [
+		"/admin",
+		"/admin/orders",
+		"/admin/products",
+		"/admin/products/new",
+		"/admin/customers",
+		"/admin/categories",
+		"/admin/theme",
+		"/admin/extensions",
+		"/admin/settings",
+		"/admin/audit",
+		"/admin/import",
+		"/setup",
+	];
+	if (products[0]) paths.push(`/admin/products/${products[0].id}`);
+	if (orders.items[0]) paths.push(`/admin/orders/${orders.items[0].id}`);
+	for (const path of paths) {
+		await page.goto(path);
+		await page.waitForLoadState("networkidle");
+		const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+		expect(overflow, `${path} scrolls sideways by ${overflow}px`).toBeLessThanOrEqual(0);
+	}
+	await ctx.close();
+});
