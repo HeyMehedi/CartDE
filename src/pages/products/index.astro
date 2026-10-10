@@ -20,7 +20,7 @@ const canonical = new URL(href(page), Astro.url).toString();
 		categories.length > 0 && (
 			<ul class="cd-chips" aria-label={t("home.categories")}>
 				<li><a href="/products" aria-current={!category ? "true" : undefined}>{t("products.all")}</a></li>
-				{categories.map((c) => <li><a href={`/products?category=${c.slug}`} aria-current={category === c.slug ? "true" : undefined}>{c.name}</a></li>)}
+				{categories.map((c) => <li><a href={`/category/${c.slug}`} aria-current={category === c.slug ? "true" : undefined}>{c.name}</a></li>)}
 			</ul>
 		)
 	}

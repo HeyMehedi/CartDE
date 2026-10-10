@@ -55,7 +55,7 @@ const money = (n: number) => formatMoney(n, store.currency, store.locale);
 				return (
 					<section class="cd-section">
 						<h2>{s.title || t("home.categories")}</h2>
-						<ul class="cd-chips">{categories.map((c) => <li><a href={`/products?category=${c.slug}`}>{c.name}</a></li>)}</ul>
+						<ul class="cd-chips">{categories.map((c) => <li><a href={`/category/${c.slug}`}>{c.name}</a></li>)}</ul>
 					</section>
 				);
 			}

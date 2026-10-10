@@ -1,9 +1,13 @@
 ---
 import Base from "../layouts/Base.astro";
+import { storefrontContext } from "../cartde/app/storefront";
+const { t } = await storefrontContext();
+Astro.response.status = 404;
+Astro.response.headers.set("X-Robots-Tag", "noindex");
 ---
 
-<Base title="Not Found">
-	<h1>Page not found</h1>
-	<p>The page you're looking for doesn't exist.</p>
-	<a href="/">Go home</a>
+<Base title={t("notfound.title")}>
+	<h1>{t("notfound.title")}</h1>
+	<p>{t("notfound.body")}</p>
+	<p><a class="cd-btn" href="/products">{t("notfound.shop")}</a> <a class="cd-btn secondary" href="/">{t("notfound.home")}</a></p>
 </Base>

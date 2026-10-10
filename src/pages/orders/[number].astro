@@ -9,7 +9,7 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
 Astro.response.headers.set("Referrer-Policy", "no-referrer");
 
 const order = await storefrontOrder(Number(Astro.params.number), Astro.url.searchParams.get("t") ?? "");
-if (!order) return new Response("Not found", { status: 404 });
+if (!order) return Astro.rewrite("/404");
 const { store, t } = await storefrontContext();
 const money = (n: number) => formatMoney(n, order.currency, store.locale);
 const status = t(`order.status.${order.status}` as MessageKey);

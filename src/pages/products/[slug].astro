@@ -10,7 +10,7 @@ import { renderMarkdown } from "../../cartde/domain/markdown";
 const user = Astro.locals.user;
 const isAdmin = !!user && !user.disabled && user.role >= ADMIN_ROLE_LEVEL;
 const product = await storefrontProduct(Astro.params.slug!, isAdmin);
-if (!product) return new Response("Not found", { status: 404 });
+if (!product) return Astro.rewrite("/404");
 
 const preview = product.status !== "active";
 if (isAdmin) Astro.response.headers.set("Cache-Control", "private, no-store"); // never cache an admin's view
@@ -61,7 +61,7 @@ const clientData = JSON.stringify({
 			<p class="cd-price" id="price">{from === to ? money(from) : `${money(from)} – ${money(to)}`}</p>
 			<script type="application/json" id="product-data" set:html={clientData} />
 			<div id="options" hidden></div>
-			<p id="stock" role="status" class="cd-muted">{inStock ? t("product.in_stock") : t("product.out_of_stock")}</p>
+			<p id="stock" role="status" class="cd-muted">{!inStock ? t("product.out_of_stock") : first.stock_qty <= store.low_stock_threshold ? t("product.only_left", { n: first.stock_qty }) : t("product.in_stock")}</p>
 			<p id="add-msg" role="status" class="cd-muted"></p>
 			<button type="button" class="cd-btn" id="add" disabled={!inStock || preview}>{t("product.add")}</button>
 			<noscript><p class="cd-muted">{t("product.needs_js")}</p></noscript>
@@ -77,7 +77,7 @@ const clientData = JSON.stringify({
 								<tr>
 									<td>{v.title}</td>
 									<td>{money(v.price_minor)}{v.compare_at_minor && v.compare_at_minor > v.price_minor && <s class="cd-muted"> {money(v.compare_at_minor)}</s>}</td>
-									<td>{v.stock_qty > 0 ? t("product.in_stock") : t("product.out_of_stock")}</td>
+									<td>{v.stock_qty < 1 ? t("product.out_of_stock") : v.stock_qty <= store.low_stock_threshold ? t("product.only_left", { n: v.stock_qty }) : t("product.in_stock")}</td>
 								</tr>
 							))}
 						</tbody>

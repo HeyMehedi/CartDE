@@ -1,6 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { decide, isStorefrontPath } from "./cartde/app/guard";
 import { checkStoreReady } from "./cartde/app/ready";
+import { addToSitemapIndex, extendRobots } from "./cartde/db/sitemap";
 
 /** Runs after EmDash's auth middleware (registered with order "pre"), so `locals.user` is already set. */
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -30,6 +31,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 			}
 		}
 		const response = await next();
+		// SEO: EmDash serves /sitemap.xml and /robots.txt; CartDE adds its products sitemap and private paths.
+		if ((url.pathname === "/sitemap.xml" || url.pathname === "/robots.txt") && response.ok) {
+			const text = await response.text();
+			const body = url.pathname === "/robots.txt" ? extendRobots(text) : addToSitemapIndex(text, new URL("/sitemap-products.xml", url.origin).toString());
+			return new Response(body, { status: response.status, headers: response.headers });
+		}
 		if (url.pathname.startsWith("/admin") || url.pathname === "/setup" || url.pathname.startsWith("/api/cartde/admin/")) {
 			response.headers.set("Cache-Control", "private, no-store");
 		}

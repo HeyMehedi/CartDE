@@ -94,6 +94,10 @@ export const en = {
 	"notready.title": "This store is not open yet",
 	"notready.body": "Please check back soon.",
 	"footer.powered": "Powered by CartDE",
+	"notfound.title": "Page not found",
+	"notfound.body": "The page you are looking for does not exist or is no longer available.",
+	"notfound.shop": "Browse products",
+	"notfound.home": "Go home",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -190,6 +194,10 @@ export const bn: Record<MessageKey, string> = {
 	"notready.title": "এই দোকান এখনও খোলেনি",
 	"notready.body": "একটু পরে আবার দেখুন।",
 	"footer.powered": "CartDE দিয়ে তৈরি",
+	"notfound.title": "পাতাটি পাওয়া যায়নি",
+	"notfound.body": "আপনি যে পাতাটি খুঁজছেন সেটি নেই বা আর পাওয়া যাচ্ছে না।",
+	"notfound.shop": "পণ্য দেখুন",
+	"notfound.home": "হোমে যান",
 };
 
 export type Lang = "en" | "bn";

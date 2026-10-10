@@ -6,8 +6,13 @@ import {
 } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
+import { adminCategories } from "../../cartde/app/catalogue";
 
 const slug = decodeSlug(Astro.params.slug);
+// PR-SF-4: a CartDE product category with this slug takes precedence over the blog's post category.
+if (slug && (await adminCategories().catch(() => [])).some((c) => c.slug === slug)) {
+	return Astro.rewrite(`/products?category=${encodeURIComponent(slug)}`);
+}
 const termsResult = await getTaxonomyTermsWithCacheHint("category", {
 	includeCounts: false,
 });
