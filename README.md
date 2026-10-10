@@ -49,7 +49,9 @@ The scaffold creates `.env` with a generated `EMDASH_ENCRYPTION_KEY` for local u
 | `pnpm typecheck` | Astro type checking |
 | `pnpm test` | Unit and database tests (Vitest) |
 | `pnpm lint` / `pnpm format` | ESLint / Prettier (CI runs `lint` and `format:check`) |
+| `pnpm test:e2e` | Playwright journeys and accessibility checks against `pnpm dev` (start it first) |
 | `pnpm db:migrate` | Apply CartDE migrations to the local database |
+| `pnpm db:export` | Export the commerce tables to `backups/` (restore rehearsed) |
 | `pnpm db:bookmark` | Print the remote database's current Time Travel restore point |
 | `pnpm build` | Production build |
 | `pnpm deploy` | Apply migrations to the remote database, build and deploy (requires `wrangler login`) |

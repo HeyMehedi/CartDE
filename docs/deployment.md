@@ -108,24 +108,37 @@ D1 write limits matter at checkout: each order writes roughly 12 to 20 rows (sto
 
 ## Backups and restore
 
-Merchant data lives in three places. Back up all three.
+Merchant data lives in four places. Back up all of them.
 
-| What | How |
-| --- | --- |
-| Orders, products, customers, EmDash content and users (D1) | **D1 Time Travel** point-in-time restore, plus EmDash's own site export (see below) |
-| Uploaded images (R2 bucket `cartde-media`) | Copy the bucket with `rclone`, or enable another copy in the Cloudflare dashboard |
-| `EMDASH_ENCRYPTION_KEY` | Keep a copy in a password manager |
+| What | How | Verified |
+| --- | --- | --- |
+| Commerce data: products, orders, customers, stock, settings (`cartde_*` tables in D1) | `pnpm db:export` writes `backups/cartde-remote-<time>.sql` (git-ignored, contains customer data) | Restore rehearsed 2026-10-10: export, fresh database, migrations, apply file; every row count and the order counter matched |
+| Whole database, point in time (commerce and EmDash) | D1 Time Travel: `pnpm db:bookmark` before risky changes; `pnpm wrangler d1 time-travel restore DB --bookmark=<id>` | Rehearsed 2026-10-10 on a scratch database: damaged data was fully restored |
+| EmDash content, pages, media records, menus, users | `pnpm exec emdash site export --url https://your-site --output site.emdash` | Export ran 2026-10-10. It does **not** include CartDE's tables, which is why `db:export` exists |
+| Uploaded images (R2 bucket `cartde-media`) | Copy the bucket with `rclone`, or enable another copy in the Cloudflare dashboard | Not rehearsed |
+| `EMDASH_ENCRYPTION_KEY` | Keep a copy in a password manager | n/a |
 
-**`wrangler d1 export` does not work on this database.** EmDash creates FTS5 search tables, and D1 refuses to export databases with virtual tables ("cannot export databases with virtual tables (like FTS5)"; seen on 2026-10-10). Use Time Travel instead:
+**Why not one `wrangler d1 export`?** D1 refuses to export a database that contains virtual tables ("cannot export databases with virtual tables (like FTS5)"), and EmDash creates FTS5 search tables. Exporting named tables works, which is what `db:export` does.
+
+### Restore commerce data from an export
 
 ```bash
-pnpm db:bookmark                                   # note the bookmark before every deploy that adds a migration
-pnpm wrangler d1 time-travel restore DB --bookmark=<bookmark>   # roll the database back to that moment
+pnpm wrangler d1 create cartde-db-restored          # or empty the existing database
+# point wrangler.jsonc's DB binding at it, then:
+pnpm wrangler d1 migrations apply DB --remote       # creates the cartde_* tables
+pnpm wrangler d1 execute DB --remote --file backups/cartde-remote-<time>.sql
 ```
 
-Time Travel retention depends on your Cloudflare plan; check the current figure at https://developers.cloudflare.com/d1/reference/time-travel/. It is a restore point inside Cloudflare, not a file you hold, so also use EmDash's site export for a copy you control (https://docs.emdashcms.com/guides/backups/). That export has not been tried against CartDE's tables: confirm that your `cartde_*` data is included before relying on it.
+The export starts with `DELETE FROM cartde_counters` so the order counter is restored instead of colliding with the value the first migration seeds. Restore EmDash content with `emdash site import` into an empty site, and R2 objects into the bucket with the same keys (product images reference EmDash media IDs).
 
-A restore to a bookmark rolls back everything after it, including orders placed since. Rehearse on a scratch database first.
+### Roll back with Time Travel
+
+```bash
+pnpm db:bookmark                                                     # note the bookmark first
+pnpm wrangler d1 time-travel restore DB --bookmark=<bookmark>
+```
+
+This rolls back everything after the bookmark, including orders placed since; Wrangler prints an undo bookmark. Retention depends on your plan: https://developers.cloudflare.com/d1/reference/time-travel/.
 
 ## Redeploying without losing data
 
@@ -147,5 +160,4 @@ A restore to a bookmark rolls back everything after it, including orders placed 
 - Deploy button from a clean Cloudflare account and a fresh GitHub fork.
 - Passkey setup, media upload and image rendering through the Images binding on the deployed Worker.
 - CPU time per request against the 10 ms free-plan limit.
-- A rehearsed Time Travel restore, and EmDash's site export including `cartde_*` tables.
 - Behaviour of the 0.2 to 0.6 code on the deployed Worker. The deployed baseline is still the 0.1 code, and the remote database does not yet have the commerce migrations (`pnpm deploy` applies them).
