@@ -132,6 +132,8 @@ Sizes are relative (S, M, L, XL) rather than dates; each milestone depends on th
 
 ### 0.2 Commerce core (L)
 
+Progress (2026-10-10): migration, domain, repositories, guard, admin API, admin pages and minimal storefront are written. 45 automated tests pass. Not yet done: browser verification of the admin pages (needs a logged-in administrator), the Worker-runtime integration tests, and a deploy of 0.2. Deviation: database tests use a `node:sqlite` stand-in for D1 instead of `@cloudflare/vitest-pool-workers`; see docs/development.md.
+
 - Migration `0001_init.sql`: store, categories, products, product_categories, product_media, options, option values, variants, variant option values, inventory events, counters.
 - Domain: money helpers, slug generation, product and variant validation schemas (zod), inventory adjustment rules.
 - Repositories and services: product CRUD, category CRUD, variant management, stock adjustment with events, store settings.

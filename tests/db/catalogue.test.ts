@@ -100,6 +100,18 @@ describe("products", () => {
 	});
 });
 
+describe("product media", () => {
+	it("stores ordered images, derives the featured image, and replaces on update", async () => {
+		const p = await createProduct(db, tee({ media: [{ media_id: "m1", alt: "Front" }, { media_id: "m2", alt: "Back" }] }));
+		expect(p.media.map((m) => m.media_id)).toEqual(["m1", "m2"]);
+		expect(p.featured_media_id).toBe("m1");
+		const u = await updateProduct(db, p.id, { media: [{ media_id: "m2", alt: "Back" }] });
+		expect(u.media.map((m) => m.media_id)).toEqual(["m2"]);
+		expect(u.featured_media_id).toBe("m2");
+		expect((await updateProduct(db, p.id, { media: [] })).featured_media_id).toBeNull();
+	});
+});
+
 describe("stock", () => {
 	it("adjusts, records events and reconciles with stock_qty", async () => {
 		const p = await createProduct(db, tee());

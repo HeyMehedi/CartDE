@@ -11,9 +11,10 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "deploy": "astro build && wrangler deploy",
+    "deploy": "wrangler d1 migrations apply DB --remote && astro build && wrangler deploy",
     "typecheck": "astro check",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:migrate": "wrangler d1 migrations apply DB --local"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",

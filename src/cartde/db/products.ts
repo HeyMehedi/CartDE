@@ -43,6 +43,7 @@ export interface ProductDetail {
 	seo_description: string | null;
 	published_at: string | null;
 	category_ids: string[];
+	media: { id: string; media_id: string; alt: string }[];
 	options: { id: string; name: string; values: { id: string; value: string }[] }[];
 	variants: VariantRow[];
 }
@@ -82,22 +83,23 @@ export async function listProducts(
 }
 
 export async function getProduct(db: D1Database, id: string): Promise<ProductDetail> {
-	const row = await db.prepare(`SELECT * FROM cartde_products WHERE id = ?1`).bind(id).first<Omit<ProductDetail, "category_ids" | "options" | "variants">>();
+	const row = await db.prepare(`SELECT * FROM cartde_products WHERE id = ?1`).bind(id).first<Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">>();
 	if (!row) throw new CartdeError("not_found", "Product not found.");
 	return hydrate(db, row);
 }
 
 export async function getActiveProductBySlug(db: D1Database, slug: string): Promise<ProductDetail | null> {
-	const row = await db.prepare(`SELECT * FROM cartde_products WHERE slug = ?1 AND status = 'active'`).bind(slug).first<Omit<ProductDetail, "category_ids" | "options" | "variants">>();
+	const row = await db.prepare(`SELECT * FROM cartde_products WHERE slug = ?1 AND status = 'active'`).bind(slug).first<Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">>();
 	if (!row) return null;
 	const detail = await hydrate(db, row);
 	detail.variants = detail.variants.filter((v) => v.status === "active");
 	return detail.variants.length ? detail : null; // FR-CAT-5
 }
 
-async function hydrate(db: D1Database, row: Omit<ProductDetail, "category_ids" | "options" | "variants">): Promise<ProductDetail> {
-	const [cats, opts, vals, vars, links] = await db.batch([
+async function hydrate(db: D1Database, row: Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">): Promise<ProductDetail> {
+	const [cats, media, opts, vals, vars, links] = await db.batch([
 		db.prepare(`SELECT category_id FROM cartde_product_categories WHERE product_id = ?1`).bind(row.id),
+		db.prepare(`SELECT id, media_id, alt FROM cartde_product_media WHERE product_id = ?1 ORDER BY sort_order`).bind(row.id),
 		db.prepare(`SELECT id, name FROM cartde_product_options WHERE product_id = ?1 ORDER BY position`).bind(row.id),
 		db.prepare(`SELECT ov.id, ov.option_id, ov.value FROM cartde_product_option_values ov JOIN cartde_product_options o ON o.id = ov.option_id WHERE o.product_id = ?1 ORDER BY ov.position`).bind(row.id),
 		db.prepare(`SELECT id, title, sku, price_minor, compare_at_minor, stock_qty, status, position FROM cartde_variants WHERE product_id = ?1 ORDER BY position`).bind(row.id),
@@ -110,6 +112,7 @@ async function hydrate(db: D1Database, row: Omit<ProductDetail, "category_ids" |
 	return {
 		...row,
 		category_ids: (cats.results as { category_id: string }[]).map((c) => c.category_id),
+		media: media.results as ProductDetail["media"],
 		options: (opts.results as { id: string; name: string }[]).map((o) => ({
 			...o,
 			values: (vals.results as { id: string; option_id: string; value: string }[])
@@ -154,11 +157,14 @@ export async function createProduct(db: D1Database, input: ProductInput, actorUs
 				`INSERT INTO cartde_products (id, name, slug, description_md, status, featured_media_id, seo_title, seo_description, published_at, created_at, updated_at)
 				 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)`,
 			)
-			.bind(id, input.name, slug, input.description_md, input.status, input.featured_media_id ?? null, input.seo_title ?? null, input.seo_description ?? null, input.status === "active" ? now : null, now),
+			.bind(id, input.name, slug, input.description_md, input.status, input.media[0]?.media_id ?? input.featured_media_id ?? null, input.seo_title ?? null, input.seo_description ?? null, input.status === "active" ? now : null, now),
 	];
 	for (const categoryId of input.category_ids) {
 		stmts.push(db.prepare(`INSERT INTO cartde_product_categories (product_id, category_id) VALUES (?1,?2)`).bind(id, categoryId));
 	}
+	input.media.forEach((m, i) => {
+		stmts.push(db.prepare(`INSERT INTO cartde_product_media (id, product_id, media_id, alt, sort_order) VALUES (?1,?2,?3,?4,?5)`).bind(newId(), id, m.media_id, m.alt, i));
+	});
 	const valueIds = new Map<string, string>(); // "optionIndex:value(lower)" -> id
 	input.options.forEach((option, oi) => {
 		const optionId = newId();
@@ -198,10 +204,12 @@ export async function createProduct(db: D1Database, input: ProductInput, actorUs
 export async function updateProduct(
 	db: D1Database,
 	id: string,
-	patch: Partial<Pick<ProductInput, "name" | "slug" | "description_md" | "status" | "featured_media_id" | "seo_title" | "seo_description" | "category_ids">>,
+	patch: Partial<Pick<ProductInput, "name" | "slug" | "description_md" | "status" | "featured_media_id" | "seo_title" | "seo_description" | "category_ids" | "media">>,
 ): Promise<ProductDetail> {
 	const current = await getProduct(db, id);
-	const next = { ...current, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) } as ProductDetail;
+	const { media, ...fields } = patch;
+	const next = { ...current, ...Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined)) } as ProductDetail;
+	if (media) next.featured_media_id = media[0]?.media_id ?? null;
 	if (next.status === "active" && !current.variants.some((v) => v.status === "active")) {
 		throw new CartdeError("invalid", "Activate at least one variant before publishing the product.");
 	}
@@ -215,6 +223,12 @@ export async function updateProduct(
 	if (patch.category_ids) {
 		stmts.push(db.prepare(`DELETE FROM cartde_product_categories WHERE product_id = ?1`).bind(id));
 		for (const c of patch.category_ids) stmts.push(db.prepare(`INSERT INTO cartde_product_categories (product_id, category_id) VALUES (?1,?2)`).bind(id, c));
+	}
+	if (media) {
+		stmts.push(db.prepare(`DELETE FROM cartde_product_media WHERE product_id = ?1`).bind(id));
+		media.forEach((m, i) => {
+			stmts.push(db.prepare(`INSERT INTO cartde_product_media (id, product_id, media_id, alt, sort_order) VALUES (?1,?2,?3,?4,?5)`).bind(newId(), id, m.media_id, m.alt, i));
+		});
 	}
 	try {
 		await db.batch(stmts);

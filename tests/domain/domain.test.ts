@@ -84,3 +84,22 @@ describe("product schema", () => {
 		expect(productInput.safeParse({ ...base, variants: [{ price_minor: 10.5 }] }).success).toBe(false);
 	});
 });
+
+import { renderMarkdown } from "../../src/cartde/domain/markdown";
+
+describe("markdown", () => {
+	it("escapes raw HTML", () => {
+		const html = renderMarkdown('<script>alert(1)</script> <img src=x onerror="y">');
+		expect(html).not.toContain("<script");
+		expect(html).not.toContain("<img");
+	});
+	it("renders the supported subset", () => {
+		expect(renderMarkdown("Hello **bold** and *it*")).toBe("<p>Hello <strong>bold</strong> and <em>it</em></p>");
+		expect(renderMarkdown("- a\n- b")).toBe("<ul><li>a</li><li>b</li></ul>");
+		expect(renderMarkdown("one\n\ntwo")).toBe("<p>one</p>\n<p>two</p>");
+	});
+	it("allows only http(s) links", () => {
+		expect(renderMarkdown("[x](https://a.test)")).toContain('href="https://a.test"');
+		expect(renderMarkdown("[x](javascript:alert(1))")).not.toContain("<a");
+	});
+});

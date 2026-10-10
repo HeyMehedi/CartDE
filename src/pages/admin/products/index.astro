@@ -1,0 +1,47 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { adminProducts, adminStore } from "../../../cartde/app/catalogue";
+import { formatMoney } from "../../../cartde/domain/money";
+
+const q = Astro.url.searchParams.get("q")?.trim() ?? "";
+const status = Astro.url.searchParams.get("status") ?? "";
+const [products, store] = await Promise.all([adminProducts({ search: q || undefined, status: status || undefined }), adminStore()]);
+---
+
+<AdminLayout title="Products" active="products">
+	<h1>Products</h1>
+	<form method="get" class="row">
+		<div><label for="q">Search</label><input id="q" name="q" type="text" value={q} /></div>
+		<div>
+			<label for="status">Status</label>
+			<select id="status" name="status">
+				<option value="">All</option>
+				{["draft", "active", "archived"].map((s) => <option value={s} selected={status === s}>{s}</option>)}
+			</select>
+		</div>
+		<button type="submit">Filter</button>
+		<a class="btn" href="/admin/products/new">New product</a>
+	</form>
+	{
+		products.length === 0 ? (
+			<p class="muted">No products yet. <a href="/admin/products/new">Create the first one.</a></p>
+		) : (
+			<div class="scroll">
+				<table>
+					<thead><tr><th>Name</th><th>Status</th><th>Variants</th><th>From</th><th>Stock</th></tr></thead>
+					<tbody>
+						{products.map((p) => (
+							<tr>
+								<td><a href={`/admin/products/${p.id}`}>{p.name}</a></td>
+								<td>{p.status}</td>
+								<td>{p.variant_count}</td>
+								<td>{p.min_price_minor === null ? "—" : formatMoney(p.min_price_minor, store.currency, store.locale)}</td>
+								<td>{p.total_stock}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		)
+	}
+</AdminLayout>

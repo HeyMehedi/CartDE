@@ -1,0 +1,41 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { adminStore } from "../../cartde/app/catalogue";
+const store = await adminStore();
+const data = JSON.stringify(store).replace(/</g, "\\u003c");
+const f = (n: number) => (n / 100).toFixed(2);
+---
+
+<AdminLayout title="Settings" active="settings">
+	<h1>Store settings</h1>
+	<div id="msg" role="alert" hidden class="error"></div>
+	<script type="application/json" id="store-data" set:html={data} />
+	<form id="settings-form">
+		<label for="name">Store name</label>
+		<input id="name" type="text" required maxlength="100" value={store.name} />
+		<div class="row">
+			<div><label for="currency">Currency (ISO code)</label><input id="currency" type="text" maxlength="3" size="4" value={store.currency} /></div>
+			<div><label for="locale">Locale</label><input id="locale" type="text" value={store.locale} /></div>
+			<div><label for="timezone">Time zone</label><input id="timezone" type="text" value={store.timezone} /></div>
+		</div>
+		<div class="row">
+			<div><label for="contact_phone">Contact phone</label><input id="contact_phone" type="text" value={store.contact_phone ?? ""} /></div>
+			<div><label for="contact_email">Contact email</label><input id="contact_email" type="email" value={store.contact_email ?? ""} /></div>
+		</div>
+		<label for="address_text">Address</label>
+		<textarea id="address_text" rows="2">{store.address_text ?? ""}</textarea>
+		<fieldset>
+			<legend>Delivery charge ({store.currency})</legend>
+			<div class="row">
+				<div><label for="inside">Inside Dhaka</label><input id="inside" type="text" inputmode="decimal" value={f(store.delivery_inside_dhaka_minor)} /></div>
+				<div><label for="outside">Outside Dhaka</label><input id="outside" type="text" inputmode="decimal" value={f(store.delivery_outside_dhaka_minor)} /></div>
+				<div><label for="low">Low-stock threshold</label><input id="low" type="text" inputmode="numeric" value={String(store.low_stock_threshold)} /></div>
+			</div>
+		</fieldset>
+		<button type="submit">Save settings</button>
+	</form>
+</AdminLayout>
+
+<script>
+	import "../../cartde/client/settings";
+</script>

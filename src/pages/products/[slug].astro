@@ -1,0 +1,52 @@
+---
+import Base from "../../layouts/Base.astro";
+import { adminStore, mediaUrls, storefrontProduct } from "../../cartde/app/catalogue";
+import { ADMIN_ROLE_LEVEL } from "../../cartde/app/guard";
+import { formatMoney } from "../../cartde/domain/money";
+import { renderMarkdown } from "../../cartde/domain/markdown";
+
+const user = Astro.locals.user;
+const isAdmin = !!user && !user.disabled && user.role >= ADMIN_ROLE_LEVEL;
+const product = await storefrontProduct(Astro.params.slug!, isAdmin);
+if (!product) return new Response("Not found", { status: 404 });
+
+const preview = product.status !== "active";
+if (isAdmin) Astro.response.headers.set("Cache-Control", "private, no-store"); // never cache an admin's view
+if (preview) Astro.response.headers.set("X-Robots-Tag", "noindex");
+
+const [store, urls] = await Promise.all([adminStore(), mediaUrls(product.media.map((m) => m.media_id))]);
+const money = (n: number) => formatMoney(n, store.currency, store.locale);
+const variants = product.variants.filter((v) => v.status === "active" || preview);
+const prices = variants.map((v) => v.price_minor);
+const from = Math.min(...prices);
+const to = Math.max(...prices);
+---
+
+<Base title={product.seo_title || product.name} description={product.seo_description}>
+	{preview && <p role="status"><strong>Preview:</strong> this product is {product.status} and visible only to administrators.</p>}
+	<h1>{product.name}</h1>
+	<div>
+		{product.media.map((m) => urls.get(m.media_id) && <img src={urls.get(m.media_id)} alt={m.alt} style="max-width:100%;height:auto" />)}
+	</div>
+	<p><strong>{from === to ? money(from) : `${money(from)} – ${money(to)}`}</strong></p>
+	<div set:html={renderMarkdown(product.description_md)} />
+	{
+		variants.length > 1 || product.options.length > 0 ? (
+			<table>
+				<thead><tr><th>Option</th><th>Price</th><th>Availability</th></tr></thead>
+				<tbody>
+					{variants.map((v) => (
+						<tr>
+							<td>{v.title}</td>
+							<td>{money(v.price_minor)}{v.compare_at_minor && v.compare_at_minor > v.price_minor && <s> {money(v.compare_at_minor)}</s>}</td>
+							<td>{v.stock_qty > 0 ? "In stock" : "Out of stock"}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		) : (
+			<p>{variants[0]!.stock_qty > 0 ? "In stock" : "Out of stock"}</p>
+		)
+	}
+	<p><em>Ordering opens in the next release.</em></p>
+</Base>

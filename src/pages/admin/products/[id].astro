@@ -1,0 +1,22 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import ProductEditor from "../../../components/admin/ProductEditor.astro";
+import { adminCategories, adminProduct, adminStore, mediaUrls } from "../../../cartde/app/catalogue";
+import { CartdeError } from "../../../cartde/db/util";
+
+let product;
+try {
+	product = await adminProduct(Astro.params.id!);
+} catch (err) {
+	if (err instanceof CartdeError && err.code === "not_found") return new Response("Product not found", { status: 404 });
+	throw err;
+}
+const [categories, store, urls] = await Promise.all([adminCategories(), adminStore(), mediaUrls(product.media.map((m) => m.media_id))]);
+const media = product.media.map((m) => ({ ...m, url: urls.get(m.media_id) ?? null }));
+---
+
+<AdminLayout title={product.name} active="products">
+	<h1>{product.name}</h1>
+	<p><a href={`/products/${product.slug}`} target="_blank" rel="noopener">Preview on storefront</a> {product.status !== "active" && <span class="muted">(visible to administrators only until active)</span>}</p>
+	<ProductEditor categories={categories} product={{ ...product, media }} currency={store.currency} />
+</AdminLayout>

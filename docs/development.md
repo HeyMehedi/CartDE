@@ -17,6 +17,7 @@ Open http://localhost:4321/_emdash/admin. The first visit runs the EmDash setup 
 
 ```bash
 pnpm typecheck
+pnpm test
 pnpm build
 pnpm wrangler deploy --dry-run --outdir dist/worker-dry-run
 ```
@@ -40,3 +41,20 @@ EmDash is an npm dependency, not copied source. `pnpm-lock.yaml` records the exa
 5. Commit `package.json` and `pnpm-lock.yaml` in their own pull request.
 
 Before deploying an update that adds core migrations, take a database backup. EmDash's JSON export cannot restore a site. Use `--to next` or `--to beta` only for testing; production uses stable releases. A new major version (2.x) needs an explicit upgrade and its own review.
+
+## Commerce database (milestone 0.2)
+
+CartDE tables (`cartde_*`) live in the same D1 database as EmDash but are created by numbered SQL files in `migrations/`, applied by Wrangler, not by EmDash.
+
+```bash
+pnpm db:migrate        # apply to the local D1 used by pnpm dev
+pnpm deploy            # applies migrations to the remote D1, builds, deploys
+```
+
+Run `pnpm db:migrate` once after pulling new migrations, before `pnpm dev`.
+
+## Tests
+
+`pnpm test` runs Vitest. Domain tests are pure. Database tests run the real `migrations/*.sql` against an in-memory SQLite through a small D1 stand-in (`tests/helpers/d1.ts`, built on `node:sqlite`). It matches D1 for the SQL CartDE uses, but is not D1: always also run `pnpm db:migrate` after changing a migration. `@cloudflare/vitest-pool-workers` (the plan's original choice) can replace the stand-in when concurrency tests arrive in 0.3.
+
+Browser code under `src/cartde/client/` is excluded from type checking because the generated workerd types conflict with the DOM types; it needs manual or Playwright tests.

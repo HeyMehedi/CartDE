@@ -20,5 +20,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm audit --audit-level=high
       - run: pnpm build
       - run: pnpm wrangler deploy --dry-run --outdir dist/worker-dry-run

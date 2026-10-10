@@ -1,0 +1,11 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import ProductEditor from "../../../components/admin/ProductEditor.astro";
+import { adminCategories } from "../../../cartde/app/catalogue";
+const categories = await adminCategories();
+---
+
+<AdminLayout title="New product" active="products">
+	<h1>New product</h1>
+	<ProductEditor categories={categories} />
+</AdminLayout>

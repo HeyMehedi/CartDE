@@ -38,6 +38,8 @@ export const productInput = z.object({
 	seo_title: trimmed(70).nullable().optional(),
 	seo_description: trimmed(160).nullable().optional(),
 	category_ids: z.array(z.string().length(26)).max(50).default([]),
+	/** Ordered product images (EmDash media IDs). The first is the featured image. */
+	media: z.array(z.object({ media_id: trimmed(64).min(1), alt: trimmed(300).default("") })).max(20).default([]),
 	options: z
 		.array(z.object({ name: trimmed(60).min(1), values: z.array(trimmed(80).min(1)).min(1).max(MAX_VARIANTS) }))
 		.max(MAX_OPTIONS)

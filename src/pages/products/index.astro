@@ -1,0 +1,27 @@
+---
+import Base from "../../layouts/Base.astro";
+import { adminStore, mediaUrls, storefrontProducts } from "../../cartde/app/catalogue";
+import { formatMoney } from "../../cartde/domain/money";
+
+const category = Astro.url.searchParams.get("category") ?? undefined;
+const [products, store] = await Promise.all([storefrontProducts(category), adminStore()]);
+const urls = await mediaUrls(products.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
+---
+
+<Base title="Products">
+	<h1>Products</h1>
+	{products.length === 0 && <p>No products are available yet.</p>}
+	<ul style="list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(12rem,1fr));gap:1rem">
+		{
+			products.map((p) => (
+				<li>
+					<a href={`/products/${p.slug}`}>
+						{p.featured_media_id && urls.get(p.featured_media_id) && <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" />}
+						<div>{p.name}</div>
+						<div>{formatMoney(p.price_minor, store.currency, store.locale)}</div>
+					</a>
+				</li>
+			))
+		}
+	</ul>
+</Base>
