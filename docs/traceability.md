@@ -88,7 +88,7 @@ Status on 2026-10-10 (end of day). Every requirement in [PRD.md](PRD.md) and [SR
 
 | ID | Status | Where | Evidence |
 | --- | --- | --- | --- |
-| FR-DEP-1 commands from the lockfile | Done | `package.json` | Run locally; CI config |
+| FR-DEP-1 commands from the lockfile | Done | `package.json` | Run locally; CI green on GitHub (build and e2e jobs), 2026-10-10 |
 | FR-DEP-2 bindings in `wrangler.jsonc` | Done | `wrangler.jsonc` | Production deploys |
 | FR-DEP-3 deploy applies migrations first | Done | `deploy` script | Production |
 | FR-DEP-4 `.env.example` | Done | `.env.example` (with the correct key format) | Review |
@@ -150,7 +150,7 @@ The OAuth consent flow of a third-party AI client (Claude, ChatGPT) was not run;
 | PR-CAT-11 discounts (after 0.6) | Partial | Drafts only, as scheduled |
 | PR-ADM-1, 2, 6 | Done | |
 | PR-ADM-8 staff roles (after 0.6) | Not done | As scheduled |
-| PR-DEP-3 deploy button from a clean account | Needs a person | The repository must be public first |
+| PR-DEP-3 deploy button from a clean account | Needs a person | Repository public since 2026-10-10; needs a second Cloudflare account to test |
 | PR-DEP-5 setup wizard | Done | EmDash wizard plus `/setup`; a setup token was evaluated and not built (deployment.md) |
 | PR-DEP-8 CLI (after 0.6) | Not done | As scheduled |
 | PR-THM-1, 2 | Done | |
@@ -165,13 +165,13 @@ The OAuth consent flow of a third-party AI client (Claude, ChatGPT) was not run;
 | 0.1 | Builds reproducibly; admin login and media upload work locally and on Cloudflare | Done: local E2E; on production the owner created the admin with a passkey and completed setup |
 | 0.2 | Merchant creates and publishes a product; storefront reads it | Done (E2E) |
 | 0.3 | Real COD order from a phone, managed to Delivered | Done in an emulated 360 px phone (E2E); not yet on a physical phone |
-| 0.4 | New user deploys and initialises without editing source | Needs a person: public repository and a clean Cloudflare account |
+| 0.4 | New user deploys and initialises without editing source | Needs a person: a clean Cloudflare account (the repository is public) |
 | 0.5 | Authorised AI client queries the store without bypassing rules | Done (E2E with a real MCP request flow and token) |
 | 0.6 | Themes and extensions evolve without changing the commerce core | Done |
 
 ## Still open
 
-1. Publish the GitHub repository (the command was blocked by this environment's permission check) and test the deploy button from a clean Cloudflare account.
+1. Test the deploy button from a clean Cloudflare account (the repository is public; CI passes on GitHub).
 2. Decide the hosting plan: CartDE needs Workers Paid for reliable CPU headroom.
 3. Add route caching to bring the p95 under 200 ms (NFR-5), then load-test with 1,000 products.
 4. Native-speaker review of the Bengali strings.

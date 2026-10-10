@@ -59,7 +59,7 @@ Once the repository is public, this button copies it to the visitor's GitHub acc
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/HeyMehedi/CartDE)
 
-The button works only after `HeyMehedi/CartDE` is public, and it has not been tested from a clean Cloudflare account (see "Not yet verified" below). The build command must apply migrations: set the deploy command to `pnpm deploy` (see "How migrations run").
+The repository `HeyMehedi/CartDE` is public; the button has not been tested from a clean Cloudflare account (see "Not yet verified" below). The build command must apply migrations: set the deploy command to `pnpm deploy` (see "How migrations run").
 
 ## Deploy from your machine
 
@@ -190,7 +190,7 @@ This rolls back everything after the bookmark, including orders placed since; Wr
 
 ## Not yet verified
 
-- The deploy button from a clean Cloudflare account and a fresh GitHub fork: the repository is not public yet.
+- The deploy button from a clean Cloudflare account and a fresh GitHub fork. The repository is public since 2026-10-10, so this needs only a second Cloudflare account.
 - Product images served through the Images binding on the deployed Worker (media upload and product images were verified locally by the end-to-end tests).
 - Copying the R2 bucket.
 - A load test with 1,000 products (SRS NFR-5).

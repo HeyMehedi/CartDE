@@ -26,7 +26,7 @@ See [docs/deployment.md](docs/deployment.md) for the deploy button, secrets, fir
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/HeyMehedi/CartDE)
 
-(The button works once the repository is public.)
+The repository is public at https://github.com/HeyMehedi/CartDE. The button has not yet been tried from a clean Cloudflare account; if it fails, use the manual steps in the deployment guide.
 
 ## Local development
 
