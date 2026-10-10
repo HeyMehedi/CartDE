@@ -9,6 +9,7 @@
 import { definePlugin } from "emdash";
 import { extensionRuntime } from "../app/extensions";
 import { buildAdminBlocks } from "./admin-page";
+import { pageSlugDecision } from "./slug-policy";
 import { overview } from "../db/orders";
 import { getStore } from "../db/store";
 import { startOfDayUtc } from "../domain/time";
@@ -69,7 +70,11 @@ export function createPlugin() {
 	return definePlugin({
 		id: PLUGIN_ID,
 		version: PLUGIN_VERSION,
-		capabilities: [],
+		// Needed only to veto publishing a page whose slug collides with a store route (SRS 3.2).
+		capabilities: ["hooks.content-policy:register"],
+		hooks: {
+			"content:beforePublish": async (event: { collection: string; content: { slug?: unknown } }) => pageSlugDecision(event.collection, event.content.slug),
+		} as never,
 		// The route/tool maps are built from the registry above; their value types are checked by EmDash at startup.
 		routes: { ...routes, admin: adminRoute } as never,
 		admin: { pages: [{ path: "/commerce", label: "CartDE", icon: "shopping-cart" }] },

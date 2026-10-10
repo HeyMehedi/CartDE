@@ -11,10 +11,11 @@ describe("CartDE EmDash plugin", () => {
 		mcp?: { tools: Record<string, { route: string; destructive?: boolean; description: string }> };
 	};
 
-	it("is accepted by definePlugin and declares no capabilities", () => {
+	it("is accepted by definePlugin and asks only for the content-policy capability", () => {
 		expect(plugin.id).toBe(PLUGIN_ID);
 		expect(plugin.version).toBe("0.5.0");
-		expect(plugin.capabilities).toEqual([]);
+		expect(plugin.capabilities).toEqual(["hooks.content-policy:register"]);
+		expect(Object.keys((plugin as unknown as { hooks: object }).hooks)).toEqual(["content:beforePublish"]);
 	});
 
 	it("exposes one private, Admin-level route per tool", () => {

@@ -25,7 +25,7 @@ export default defineConfig({
 					version: "0.5.0",
 					format: "native",
 					entrypoint: fileURLToPath(new URL("./src/cartde/plugin/index.ts", import.meta.url)),
-					capabilities: [],
+					capabilities: ["hooks.content-policy:register"],
 				},
 			],
 		}),
