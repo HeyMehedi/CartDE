@@ -1,10 +1,10 @@
 {
   "name": "cartde",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "emdash": {
-    "label": "Starter",
+    "label": "CartDE",
     "seed": "seed/seed.json"
   },
   "scripts": {

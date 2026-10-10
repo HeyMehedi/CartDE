@@ -1,55 +1,52 @@
-# EmDash Starter Template (Cloudflare)
+# CartDE
 
-A general-purpose starting point for building sites with [EmDash](https://github.com/emdash-cms/emdash) on Cloudflare Workers. Includes posts, pages, categories, and tags with minimal styling -- designed as a base you can build on rather than a finished theme.
+Open-source commerce. Your store. Your infrastructure. AI-ready.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/emdash-cms/templates/tree/main/starter-cloudflare)
+CartDE (Cart Digital Engine) is an open-source online store that you deploy to your own Cloudflare account. It is built on [EmDash CMS](https://github.com/emdash-cms/emdash), Astro, Cloudflare Workers, D1 and R2.
 
-## What's Included
+## Status
 
-- Posts with category and tag archives
-- Static pages via slug routing
-- Seed data with demo content
-- D1 database and R2 storage pre-configured
+| Area | Status |
+| --- | --- |
+| Foundation: EmDash 1.2.0 on Astro, Workers, D1, R2 | Implemented. Builds and typechecks locally. Not yet deployed. |
+| Admin login and media library (from EmDash) | Available locally through the EmDash admin. Not yet verified end to end in this repository. |
+| Product catalogue, storefront, cart, cash-on-delivery checkout, orders | Planned (milestones 0.2 and 0.3) |
+| One-click deployment and first-run store setup | Planned (milestone 0.4) |
+| AI tools through MCP | Planned (milestone 0.5) |
+| Themes and extensions | Planned (milestone 0.6) |
+| Online payment gateways, courier and messaging integrations | Not planned for the initial releases |
 
-## Pages
+Nothing in the planned rows exists yet. See [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) for the milestone plan.
 
-| Page | Route |
-|---|---|
-| Homepage | `/` |
-| All posts | `/posts` |
-| Single post | `/posts/:slug` |
-| Category archive | `/category/:slug` |
-| Tag archive | `/tag/:slug` |
-| Static pages | `/:slug` |
-| 404 | fallback |
+## Local development
 
-## Infrastructure
-
-- **Runtime:** Cloudflare Workers
-- **Database:** D1
-- **Storage:** R2
-- **Framework:** Astro with `@astrojs/cloudflare`
-
-## Local Development
+Requirements: Node.js 22.16 or newer and pnpm 11.
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open http://localhost:4321/_emdash/admin and complete the setup wizard. EmDash runs database migrations and applies the starter seed during setup. The site is available at http://localhost:4321.
+Open http://localhost:4321/_emdash/admin and complete the setup wizard to create the first administrator.
 
-## Deploying
+The scaffold creates `.env` with a generated `EMDASH_ENCRYPTION_KEY` for local use. If `.env` is missing, copy `.env.example` to `.env` and set that key. `.env` is ignored by git.
 
-```bash
-pnpm wrangler login
-pnpm deploy
-```
+## Scripts
 
-The first deployment provisions the named D1 database and R2 bucket from `wrangler.jsonc`. See [Deploy to Cloudflare](https://docs.emdashcms.com/deployment/cloudflare/) for production setup, or use the deploy button above.
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Local development server |
+| `pnpm typecheck` | Astro type checking |
+| `pnpm build` | Production build |
+| `pnpm deploy` | Build and deploy to Cloudflare (requires `wrangler login`) |
 
-## See Also
+## Documentation
 
-- [Node.js variant](../starter) -- same template using SQLite and local file storage
-- [All templates](../)
-- [EmDash documentation](https://docs.emdashcms.com/)
+- [docs/PRD.md](docs/PRD.md): product requirements
+- [docs/SRS.md](docs/SRS.md): software requirements and data model
+- [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md): milestones and decisions
+- [docs/architecture.md](docs/architecture.md), [docs/development.md](docs/development.md), [docs/deployment.md](docs/deployment.md)
+
+## License
+
+MIT. See [LICENSE](LICENSE).
