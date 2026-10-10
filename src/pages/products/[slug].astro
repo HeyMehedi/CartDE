@@ -1,6 +1,8 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { adminStore, mediaUrls, storefrontProduct } from "../../cartde/app/catalogue";
+import { mediaUrls, storefrontProduct } from "../../cartde/app/catalogue";
+import { storefrontContext } from "../../cartde/app/storefront";
+import { clientMessages } from "../../cartde/i18n/messages";
 import { ADMIN_ROLE_LEVEL } from "../../cartde/app/guard";
 import { formatMoney } from "../../cartde/domain/money";
 import { renderMarkdown } from "../../cartde/domain/markdown";
@@ -14,7 +16,7 @@ const preview = product.status !== "active";
 if (isAdmin) Astro.response.headers.set("Cache-Control", "private, no-store"); // never cache an admin's view
 if (preview) Astro.response.headers.set("X-Robots-Tag", "noindex");
 
-const [store, urls] = await Promise.all([adminStore(), mediaUrls(product.media.map((m) => m.media_id))]);
+const [{ store, t, lang }, urls] = await Promise.all([storefrontContext(), mediaUrls(product.media.map((m) => m.media_id))]);
 const money = (n: number) => formatMoney(n, store.currency, store.locale);
 const variants = product.variants.filter((v) => v.status === "active" || preview);
 const prices = variants.map((v) => v.price_minor);
@@ -36,6 +38,7 @@ const jsonLd = {
 	offers: from === to ? offer(from) : { "@type": "AggregateOffer", lowPrice: (from / 100).toFixed(2), highPrice: (to / 100).toFixed(2), priceCurrency: store.currency, offerCount: variants.length, availability: `https://schema.org/${inStock ? "InStock" : "OutOfStock"}` },
 };
 const ld = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
+const i18n = JSON.stringify(clientMessages(lang, ["product.in_stock", "product.out_of_stock", "product.only_left", "product.added", "product.view_cart", "product.unavailable_combo"])).replace(/</g, "\\u003c");
 const clientData = JSON.stringify({
 	currency: store.currency, locale: store.locale, lowStock: store.low_stock_threshold,
 	options: product.options.map((o) => ({ name: o.name, values: o.values.map((v) => v.value) })),
@@ -48,7 +51,7 @@ const clientData = JSON.stringify({
 		{preview && <meta name="robots" content="noindex" />}
 		<script type="application/ld+json" set:html={ld} />
 	</Fragment>
-	{preview && <p role="status" class="cd-alert"><strong>Preview:</strong> this product is {product.status} and visible only to administrators.</p>}
+	{preview && <p role="status" class="cd-alert">{t("product.preview", { status: product.status })}</p>}
 	<div class="cd-split">
 		<div>
 			{images.map((i) => <img src={i.url} alt={i.alt} style="margin-bottom:.5rem" />)}
@@ -58,22 +61,23 @@ const clientData = JSON.stringify({
 			<p class="cd-price" id="price">{from === to ? money(from) : `${money(from)} – ${money(to)}`}</p>
 			<script type="application/json" id="product-data" set:html={clientData} />
 			<div id="options" hidden></div>
-			<p id="stock" role="status" class="cd-muted">{inStock ? "In stock" : "Out of stock"}</p>
+			<p id="stock" role="status" class="cd-muted">{inStock ? t("product.in_stock") : t("product.out_of_stock")}</p>
 			<p id="add-msg" role="status" class="cd-muted"></p>
-			<button type="button" class="cd-btn" id="add" disabled={!inStock || preview}>Add to cart</button>
-			<noscript><p class="cd-muted">Enable JavaScript to use the cart.</p></noscript>
+			<button type="button" class="cd-btn" id="add" disabled={!inStock || preview}>{t("product.add")}</button>
+			<noscript><p class="cd-muted">{t("product.needs_js")}</p></noscript>
+			<script type="application/json" id="i18n" set:html={i18n} />
 			<div set:html={renderMarkdown(product.description_md)} />
 			{
 				variants.length > 1 && (
 					<table class="cd-table">
-						<caption class="cd-muted">All options</caption>
-						<thead><tr><th>Option</th><th>Price</th><th>Availability</th></tr></thead>
+						<caption class="cd-muted">{t("product.all_options")}</caption>
+						<thead><tr><th>{t("product.option")}</th><th>{t("product.price")}</th><th>{t("product.availability")}</th></tr></thead>
 						<tbody>
 							{variants.map((v) => (
 								<tr>
 									<td>{v.title}</td>
 									<td>{money(v.price_minor)}{v.compare_at_minor && v.compare_at_minor > v.price_minor && <s class="cd-muted"> {money(v.compare_at_minor)}</s>}</td>
-									<td>{v.stock_qty > 0 ? "In stock" : "Out of stock"}</td>
+									<td>{v.stock_qty > 0 ? t("product.in_stock") : t("product.out_of_stock")}</td>
 								</tr>
 							))}
 						</tbody>

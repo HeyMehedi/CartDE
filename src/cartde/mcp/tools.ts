@@ -10,11 +10,14 @@ import { recordAudit, summarizePayload } from "../db/audit";
 import { createDiscountDraft } from "../db/discounts";
 import { getOrder, getOrderIdByNumber, listOrders, salesSummary, transitionOrder } from "../db/orders";
 import { adjustStock, createProduct, listProducts, updateProduct } from "../db/products";
+import type { ExtensionRuntime } from "../extensions/types";
 import { discountDraftInput, orderTransitionInput, productInput } from "../domain/schemas";
 
 export interface ToolContext {
 	db: D1Database;
 	actorUserId: string | null;
+	/** Extension runtime, so changes made by AI fire the same order events as the dashboard. */
+	extensions?: ExtensionRuntime;
 }
 
 export interface ToolDef<I extends z.ZodType = z.ZodType> {
@@ -117,8 +120,8 @@ export const TOOLS = {
 		description: "Move an order along its workflow (pending→confirmed→shipped→delivered; cancel from pending/confirmed; return from shipped/delivered). Cancelling or returning puts stock back. Invalid moves are refused. Confirm with the user before calling.",
 		input: orderTransitionInput.extend({ order_number: orderNumber }).strict(),
 		mutates: true, destructive: true, entity: "order",
-		run: async ({ db, actorUserId }, { order_number, ...transition }) => {
-			const o = await transitionOrder(db, await getOrderIdByNumber(db, order_number), transition, actorUserId);
+		run: async ({ db, actorUserId, extensions }, { order_number, ...transition }) => {
+			const o = await transitionOrder(db, await getOrderIdByNumber(db, order_number), transition, actorUserId, { extensions });
 			return { order_number: o.order_number, status: o.status, payment_status: o.payment_status };
 		},
 	}),

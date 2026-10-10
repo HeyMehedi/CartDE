@@ -73,7 +73,7 @@ Checked against the Cloudflare Workers limits page (updated 2026-10-08):
 | Requests per day | 100,000 |
 | Subrequests per request | 50 |
 
-The current build uploads about 18 MB uncompressed, which is within the script size limit. The 10 ms CPU limit is not yet measured for the storefront. Measuring it on a deployed baseline is an open task in the Development Plan.
+The 0.6 build uploads 18,462 KiB uncompressed (4,751 KiB gzipped, measured by `wrangler deploy --dry-run` on 2026-10-10), which is within the script size limit. The 10 ms CPU limit is not yet measured for the storefront. Measuring it on a deployed baseline is an open task in the Development Plan.
 
 D1, R2 and Images free-tier limits are not yet recorded here. Record them with their check date before any free hosting claim is published.
 
@@ -121,4 +121,4 @@ To restore production, point `wrangler.jsonc` at the restored database (or empty
 - Passkey setup, media upload and image rendering through the Images binding on the deployed Worker.
 - CPU time per request against the free-plan limit.
 - A rehearsed restore from a `db:export` file.
-- Compressed Worker bundle size.
+- Behaviour of the 0.2 to 0.6 code on the deployed Worker. The deployed baseline is still the 0.1 code, and the remote database does not yet have the commerce migrations (`pnpm deploy` applies them).

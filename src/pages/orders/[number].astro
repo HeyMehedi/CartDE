@@ -1,33 +1,36 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { storefrontOrder, adminStore } from "../../cartde/app/catalogue";
+import { storefrontOrder } from "../../cartde/app/catalogue";
+import { storefrontContext } from "../../cartde/app/storefront";
 import { formatMoney } from "../../cartde/domain/money";
+import type { MessageKey } from "../../cartde/i18n/messages";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 Astro.response.headers.set("X-Robots-Tag", "noindex");
 Astro.response.headers.set("Referrer-Policy", "no-referrer");
 
 const order = await storefrontOrder(Number(Astro.params.number), Astro.url.searchParams.get("t") ?? "");
 if (!order) return new Response("Not found", { status: 404 });
-const store = await adminStore();
+const { store, t } = await storefrontContext();
 const money = (n: number) => formatMoney(n, order.currency, store.locale);
-const labels: Record<string, string> = { pending: "Received", confirmed: "Confirmed", shipped: "On the way", delivered: "Delivered", cancelled: "Cancelled", returned: "Returned" };
+const status = t(`order.status.${order.status}` as MessageKey);
 ---
 
-<Base title={`Order #${order.order_number}`}>
-	<h1>Thank you, {order.customer_name}!</h1>
-	<p>Your order <strong>#{order.order_number}</strong> is <strong>{labels[order.status]}</strong>. Pay in cash when it arrives.</p>
-	<p class="cd-muted">Keep this page's link to check your order later.{store.contact_phone && ` Questions? Call ${store.contact_phone}.`}</p>
+<Base title={`#${order.order_number}`}>
+	<h1>{t("order.thanks", { name: order.customer_name })}</h1>
+	<p>{t("order.status_line", { number: order.order_number, status })}</p>
+	<p class="cd-muted">{t("order.keep_link")} {store.contact_phone && t("order.call", { phone: store.contact_phone })}</p>
 	<table class="cd-table">
-		<thead><tr><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
+		<thead><tr><th>{t("order.item")}</th><th>{t("order.qty")}</th><th>{t("order.total")}</th></tr></thead>
 		<tbody>
 			{order.items.map((i) => <tr><td>{i.product_name}{i.variant_title !== "Default" && ` (${i.variant_title})`}</td><td>{i.quantity}</td><td>{money(i.line_total_minor)}</td></tr>)}
 		</tbody>
 		<tfoot>
-			<tr><td colspan="2">Subtotal</td><td>{money(order.subtotal_minor)}</td></tr>
-			<tr><td colspan="2">Delivery</td><td>{money(order.delivery_minor)}</td></tr>
-			<tr><th colspan="2">Total (cash on delivery)</th><th>{money(order.total_minor)}</th></tr>
+			<tr><td colspan="2">{t("order.subtotal")}</td><td>{money(order.subtotal_minor)}</td></tr>
+			{order.discount_minor > 0 && <tr><td colspan="2">{t("order.discount")}</td><td>−{money(order.discount_minor)}</td></tr>}
+			<tr><td colspan="2">{t("order.delivery")}</td><td>{money(order.delivery_minor)}</td></tr>
+			<tr><th colspan="2">{t("order.total_cod")}</th><th>{money(order.total_minor)}</th></tr>
 		</tfoot>
 	</table>
-	<h2>Delivery details</h2>
+	<h2>{t("order.delivery_details")}</h2>
 	<p>{order.ship_recipient_name}<br />{order.ship_phone}<br />{order.ship_line1}, {order.ship_area}, {order.ship_district}</p>
 </Base>

@@ -1,7 +1,7 @@
 ---
 interface Props {
 	title: string;
-	active?: "overview" | "audit" | "orders" | "products" | "customers" | "categories" | "settings";
+	active?: "overview" | "audit" | "theme" | "extensions" | "orders" | "products" | "customers" | "categories" | "settings";
 }
 const { title, active } = Astro.props;
 const links = [
@@ -10,6 +10,8 @@ const links = [
 	["products", "/admin/products", "Products"],
 	["customers", "/admin/customers", "Customers"],
 	["categories", "/admin/categories", "Categories"],
+	["theme", "/admin/theme", "Theme"],
+	["extensions", "/admin/extensions", "Extensions"],
 	["settings", "/admin/settings", "Settings"],
 	["audit", "/admin/audit", "Activity"],
 ] as const;

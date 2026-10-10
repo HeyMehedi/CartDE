@@ -2,79 +2,110 @@
 import { getEmDashCollection, getSiteSettings } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../layouts/Base.astro";
-import { adminStore, mediaUrls, storefrontProducts } from "../cartde/app/catalogue";
+import { adminCategories, mediaUrls, storefrontProducts } from "../cartde/app/catalogue";
+import { extensionRuntime } from "../cartde/app/extensions";
+import { storefrontContext } from "../cartde/app/storefront";
 import { formatMoney } from "../cartde/domain/money";
+import { env } from "cloudflare:workers";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
 
-const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
-	orderBy: { published_at: "desc" },
-	limit: 10,
-});
-const { siteTitle, siteTagline } = resolveStarterSiteIdentity(
-	await getSiteSettings(),
-);
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
-const [{ items: products }, store] = await Promise.all([storefrontProducts({ pageSize: 8 }), adminStore()]);
+const { store, theme, t } = await storefrontContext();
+const { siteTitle, siteTagline } = resolveStarterSiteIdentity(await getSiteSettings());
+const sections = theme.sections.filter((s) => s.enabled);
+
+const wantsProducts = sections.some((s) => s.type === "latest_products");
+const productLimit = Math.max(0, ...sections.filter((s) => s.type === "latest_products").map((s) => s.count ?? 8));
+const products = wantsProducts ? (await storefrontProducts({ pageSize: productLimit })).items : [];
+const categories = sections.some((s) => s.type === "categories") ? await adminCategories() : [];
 const urls = await mediaUrls(products.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
+
+const wantsPosts = sections.some((s) => s.type === "recent_posts");
+const postLimit = Math.max(0, ...sections.filter((s) => s.type === "recent_posts").map((s) => s.count ?? 3));
+const postsResult = wantsPosts ? await getEmDashCollection("posts", { orderBy: { published_at: "desc" }, limit: postLimit }) : null;
+if (postsResult && Astro.cache?.enabled) Astro.cache.set(postsResult.cacheHint);
+const posts = postsResult?.entries ?? [];
+
+const runtime = await extensionRuntime(env.DB);
+const extensionData = new Map<string, Awaited<ReturnType<typeof runtime.loadSection>>>();
+for (const s of sections) {
+	if (s.type === "extension" && s.extension_id) extensionData.set(s.extension_id, await runtime.loadSection(s.extension_id, { currency: store.currency, locale: store.locale }));
+}
+const money = (n: number) => formatMoney(n, store.currency, store.locale);
 ---
 
 <Base title={siteTitle} description={siteTagline}>
-	<section>
-		<h1>{siteTitle}</h1>
-		<p>{siteTagline}</p>
-		<p><a class="cd-btn" href="/products">Shop all products</a></p>
-	</section>
-
 	{
-		products.length > 0 && (
-			<section aria-labelledby="latest">
-				<h2 id="latest">Latest products</h2>
-				<ul class="cd-grid">
-					{products.map((p) => (
-						<li class="cd-card">
-							<a href={`/products/${p.slug}`}>
-								{p.featured_media_id && urls.get(p.featured_media_id) ? <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" /> : <div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />}
-								<div>{p.name}</div>
-								<div class="cd-price">{formatMoney(p.price_minor, store.currency, store.locale)}</div>
-							</a>
-						</li>
-					))}
-				</ul>
-			</section>
-		)
+		sections.map((s) => {
+			if (s.type === "hero") {
+				return (
+					<section class="cd-hero">
+						<h1>{s.title || siteTitle}</h1>
+						<p>{s.body || siteTagline}</p>
+						<p><a class="cd-btn" href="/products">{t("home.shop_all")}</a></p>
+					</section>
+				);
+			}
+			return null;
+		})
 	}
-
-	<section>
-		<h2>Recent posts</h2>
-		{
-			posts.length === 0 ? (
-				<p>
-					No posts yet. <a href="/_emdash/admin/content/posts/new">Create one</a>.
-				</p>
-			) : (
-				<ul>
-					{posts.map((post) => (
-						<li>
-							<a href={`/posts/${post.id}`}>
-								{post.data.featured_image && (
-									<div {...post.edit.featured_image}><Image image={post.data.featured_image} /></div>
-								)}
-								<h3 {...post.edit.title}>{post.data.title}</h3>
-							</a>
-							{post.data.excerpt && <p {...post.edit.excerpt}>{post.data.excerpt}</p>}
-							{post.data.publishedAt && (
-								<time datetime={post.data.publishedAt.toISOString()}>
-									{post.data.publishedAt.toLocaleDateString("en-US", {
-										year: "numeric",
-										month: "long",
-										day: "numeric",
-									})}
-								</time>
-							)}
-						</li>
-					))}
-				</ul>
-			)
-		}
-	</section>
+	{
+		sections.map((s) => {
+			if (s.type === "text") return <section class="cd-section"><h2>{s.title}</h2><p>{s.body}</p></section>;
+			if (s.type === "categories" && categories.length > 0) {
+				return (
+					<section class="cd-section">
+						<h2>{s.title || t("home.categories")}</h2>
+						<ul class="cd-chips">{categories.map((c) => <li><a href={`/products?category=${c.slug}`}>{c.name}</a></li>)}</ul>
+					</section>
+				);
+			}
+			if (s.type === "latest_products" && products.length > 0) {
+				return (
+					<section class="cd-section" aria-labelledby="latest">
+						<h2 id="latest">{s.title || t("home.latest")}</h2>
+						<ul class="cd-grid">
+							{products.slice(0, s.count ?? 8).map((p) => (
+								<li class="cd-card">
+									<a href={`/products/${p.slug}`}>
+										{p.featured_media_id && urls.get(p.featured_media_id) ? <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" /> : <div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />}
+										<div>{p.name}</div>
+										<div class="cd-price">{money(p.price_minor)}</div>
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				);
+			}
+			if (s.type === "extension" && s.extension_id && extensionData.get(s.extension_id)) {
+				const d = extensionData.get(s.extension_id)!;
+				return (
+					<section class="cd-section cd-banner">
+						<h2>{s.title || d.title}</h2>
+						{d.body && <p>{d.body}</p>}
+						{d.items && d.items.length > 0 && <ul>{d.items.map((i) => <li><a href={i.url}>{i.label}</a>{i.note && <span class="cd-muted"> — {i.note}</span>}</li>)}</ul>}
+					</section>
+				);
+			}
+			if (s.type === "recent_posts" && posts.length > 0) {
+				return (
+					<section class="cd-section">
+						<h2>{s.title || t("home.recent_posts")}</h2>
+						<ul>
+							{posts.slice(0, s.count ?? 3).map((post) => (
+								<li>
+									<a href={`/posts/${post.id}`}>
+										{post.data.featured_image && <div {...post.edit.featured_image}><Image image={post.data.featured_image} /></div>}
+										<h3 {...post.edit.title}>{post.data.title}</h3>
+									</a>
+									{post.data.excerpt && <p {...post.edit.excerpt}>{post.data.excerpt}</p>}
+								</li>
+							))}
+						</ul>
+					</section>
+				);
+			}
+			return null;
+		})
+	}
 </Base>

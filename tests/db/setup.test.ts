@@ -76,7 +76,7 @@ describe("store status", () => {
 
 describe("storefront path classification", () => {
 	it("covers shopper routes but not admin, EmDash or content pages", () => {
-		for (const p of ["/", "/products", "/products/x", "/cart", "/checkout", "/orders/1001", "/api/cartde/checkout", "/api/cartde/cart/validate"]) expect(isStorefrontPath(p), p).toBe(true);
+		for (const p of ["/", "/products", "/products/x", "/cart", "/checkout", "/orders/1001", "/search", "/api/cartde/checkout", "/api/cartde/cart/validate"]) expect(isStorefrontPath(p), p).toBe(true);
 		for (const p of ["/admin", "/setup", "/_emdash/admin", "/about", "/posts/hello", "/api/cartde/admin/products"]) expect(isStorefrontPath(p), p).toBe(false);
 	});
 });

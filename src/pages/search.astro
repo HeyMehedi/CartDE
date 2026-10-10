@@ -1,0 +1,49 @@
+---
+import Base from "../layouts/Base.astro";
+import { env } from "cloudflare:workers";
+import { mediaUrls } from "../cartde/app/catalogue";
+import { storefrontContext } from "../cartde/app/storefront";
+import { searchStorefrontProducts } from "../cartde/db/search";
+import { formatMoney } from "../cartde/domain/money";
+
+const { store, t } = await storefrontContext();
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 100);
+const page = Math.max(1, Number(Astro.url.searchParams.get("page")) || 1);
+const result = q ? await searchStorefrontProducts(env.DB, q, page) : { items: [], total: 0, page: 1, pageSize: 24 };
+const urls = await mediaUrls(result.items.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
+const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
+const href = (n: number) => `/search?${new URLSearchParams({ q, ...(n > 1 ? { page: String(n) } : {}) })}`;
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+---
+
+<Base title={t("search.title")}>
+	<h1>{q ? t("search.results_for", { q }) : t("search.title")}</h1>
+	<form action="/search" method="get" role="search" class="cd-search" style="margin-bottom:1rem">
+		<input type="search" name="q" value={q} maxlength="100" aria-label={t("nav.search")} placeholder={t("nav.search")} />
+		<button type="submit">{t("nav.search_button")}</button>
+	</form>
+	{!q && <p class="cd-muted">{t("search.prompt")}</p>}
+	{q && result.items.length === 0 && <p class="cd-muted">{t("search.none")}</p>}
+	<ul class="cd-grid">
+		{
+			result.items.map((p) => (
+				<li class="cd-card">
+					<a href={`/products/${p.slug}`}>
+						{p.featured_media_id && urls.get(p.featured_media_id) ? <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" /> : <div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />}
+						<div>{p.name}</div>
+						<div class="cd-price">{formatMoney(p.price_minor, store.currency, store.locale)}</div>
+					</a>
+				</li>
+			))
+		}
+	</ul>
+	{
+		pages > 1 && (
+			<nav class="cd-pager" aria-label="Pagination">
+				{page > 1 && <a href={href(page - 1)} rel="prev">{t("products.newer")}</a>}
+				<span>{t("products.page_of", { page, pages })}</span>
+				{page < pages && <a href={href(page + 1)} rel="next">{t("products.older")}</a>}
+			</nav>
+		)
+	}
+</Base>

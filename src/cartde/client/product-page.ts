@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Browser-only code. Variant selector and add-to-cart for the product page (FR-SF-3).
 import { addToCart, money } from "./cart";
+import { t } from "./i18n";
 
 const data = JSON.parse(document.getElementById("product-data").textContent);
 const priceEl = document.getElementById("price");
@@ -19,10 +20,10 @@ function match() {
 
 function render() {
 	const v = current;
-	if (!v) { stockEl.textContent = "This combination is not available."; addBtn.disabled = true; return; }
+	if (!v) { stockEl.textContent = t("product.unavailable_combo"); addBtn.disabled = true; return; }
 	priceEl.textContent = fmt(v.price);
 	if (v.compare && v.compare > v.price) { const s = document.createElement("s"); s.className = "cd-muted"; s.textContent = " " + fmt(v.compare); priceEl.append(s); }
-	stockEl.textContent = v.stock < 1 ? "Out of stock" : v.stock <= data.lowStock ? `Only ${v.stock} left` : "In stock";
+	stockEl.textContent = v.stock < 1 ? t("product.out_of_stock") : v.stock <= data.lowStock ? t("product.only_left", { n: v.stock }) : t("product.in_stock");
 	addBtn.disabled = v.stock < 1;
 }
 
@@ -42,6 +43,6 @@ render();
 addBtn.onclick = () => {
 	if (!current || current.stock < 1) return;
 	addToCart(current.id, 1);
-	msg.textContent = "Added to your cart. ";
-	const a = document.createElement("a"); a.href = "/cart"; a.textContent = "View cart"; msg.append(a);
+	msg.textContent = t("product.added");
+	const a = document.createElement("a"); a.href = "/cart"; a.textContent = t("product.view_cart"); msg.append(a);
 };

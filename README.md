@@ -15,7 +15,7 @@ CartDE (Cart Digital Engine) is an open-source online store that you deploy to y
 | Orders: placement with atomic stock decrement, idempotent retries, status workflow with stock restore, customers, printable summary | Partial (milestone 0.3). Same verification as above. |
 | First-run store setup (`/setup`), store-not-ready page, backup script, deployment and recovery guide | Implemented in code and tests (milestone 0.4). The deploy button and a clean-account install are untested. |
 | AI tools through MCP (9 tools), activity log | Partial (milestone 0.5). Logic, permissions and audit are covered by tests; not yet tried with a live MCP client. See [docs/ai-tools.md](docs/ai-tools.md). |
-| Themes and extensions | Planned (milestone 0.6) |
+| Themes (2 presets, validated settings, homepage sections, footer), extension hooks with a sample, Bengali storefront, product search | Partial (milestone 0.6). Server logic and storefront verified by tests and an HTTP run; the admin theme/extension screens are not yet used in a browser. See [docs/extensions.md](docs/extensions.md). |
 | Online payment gateways, courier and messaging integrations | Not planned for the initial releases |
 
 Rows marked Partial or Planned are not finished. See [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) for the milestone plan.
@@ -58,6 +58,7 @@ The scaffold creates `.env` with a generated `EMDASH_ENCRYPTION_KEY` for local u
 - [docs/PRD.md](docs/PRD.md): product requirements
 - [docs/SRS.md](docs/SRS.md): software requirements and data model
 - [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md): milestones and decisions
+- [docs/extensions.md](docs/extensions.md): themes, languages, search and the extension API
 - [docs/ai-tools.md](docs/ai-tools.md): connecting AI clients and the tool safety design
 - [docs/architecture.md](docs/architecture.md), [docs/development.md](docs/development.md), [docs/deployment.md](docs/deployment.md)
 

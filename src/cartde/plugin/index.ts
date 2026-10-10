@@ -7,6 +7,7 @@
  * Orders contain customer contact details, so nothing here is available below Admin.
  */
 import { definePlugin } from "emdash";
+import { extensionRuntime } from "../app/extensions";
 import { CartdeError } from "../db/util";
 import { executeTool, TOOL_NAMES, TOOLS, ToolInputError, type ToolName } from "../mcp/tools";
 
@@ -28,7 +29,8 @@ const routes = Object.fromEntries(
 			input: TOOLS[name].input,
 			handler: async (ctx: { input: unknown; user?: { id: string } }) => {
 				try {
-					return { ok: true, data: await executeTool(name as ToolName, { db: await database(), actorUserId: ctx.user?.id ?? null }, ctx.input) };
+					const db = await database();
+					return { ok: true, data: await executeTool(name as ToolName, { db, actorUserId: ctx.user?.id ?? null, extensions: await extensionRuntime(db) }, ctx.input) };
 				} catch (err) {
 					if (err instanceof ToolInputError) return { ok: false, error: { code: "invalid_input", message: err.message, fields: err.fields } };
 					if (err instanceof CartdeError) return { ok: false, error: { code: err.code, message: err.message, fields: err.fields } };

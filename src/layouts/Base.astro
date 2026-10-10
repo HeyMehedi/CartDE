@@ -3,6 +3,8 @@ import { getMenuWithCacheHint, getSiteSettingsWithCacheHint } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
+import { storefrontContext } from "../cartde/app/storefront";
+import { themeCss } from "../cartde/domain/theme";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
 import "../themes/default/theme.css";
 
@@ -34,8 +36,10 @@ const titleIncludesSiteName =
 	title === siteTitle ||
 	title.endsWith(` | ${siteTitle}`) ||
 	title.endsWith(` — ${siteTitle}`);
-const fullTitle = titleIncludesSiteName ? title : `${title} — ${siteTitle}`;
-const pageDescription = description ?? siteTagline;
+const { theme, lang, t } = await storefrontContext();
+const baseTitle = titleIncludesSiteName ? title : `${title} — ${siteTitle}`;
+const fullTitle = theme.seo.title_suffix ? `${baseTitle} ${theme.seo.title_suffix}` : baseTitle;
+const pageDescription = description ?? (theme.seo.default_description || siteTagline);
 const menu = menuResult.data;
 
 const pageCtx = createPublicPageContext({
@@ -53,17 +57,19 @@ const pageCtx = createPublicPageContext({
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{fullTitle}</title>
 		<EmDashHead page={pageCtx} />
 		<slot name="head" />
+		<style is:inline set:html={themeCss(theme)} />
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
 
+		<a href="#main" class="cd-skip">Skip to content</a>
 		<header>
 			<nav>
 				<a href="/">
@@ -90,15 +96,31 @@ const pageCtx = createPublicPageContext({
 						</a>
 					))
 				}
-				<a href="/products">Shop</a>
+				<a href="/products">{t("nav.shop")}</a>
+				<form action="/search" method="get" role="search" class="cd-search">
+					<input type="search" name="q" maxlength="100" placeholder={t("nav.search")} aria-label={t("nav.search")} />
+					<button type="submit">{t("nav.search_button")}</button>
+				</form>
 				<LiveSearch placeholder="Search..." collections={["posts", "pages"]} />
-				<a href="/cart" class="cart-link">Cart <span id="cart-count" aria-live="polite"></span></a>
+				<a href="/cart" class="cart-link">{t("nav.cart")} <span id="cart-count" aria-live="polite"></span></a>
 			</nav>
 		</header>
 
-		<main>
+		<main id="main">
 			<slot />
 		</main>
+
+		<footer class="cd-footer">
+			{theme.footer.text && <p>{theme.footer.text}</p>}
+			{
+				theme.footer.links.length > 0 && (
+					<ul class="cd-footer-links">
+						{theme.footer.links.map((l) => <li><a href={l.url}>{l.label}</a></li>)}
+					</ul>
+				)
+			}
+			<p class="cd-muted">{t("footer.powered")}</p>
+		</footer>
 
 		<script>
 			import "../cartde/client/cart-badge";

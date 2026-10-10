@@ -177,6 +177,8 @@ Progress (2026-10-10): migration `0003_audit_discounts.sql`, audit writes for ev
 
 ### 0.6 Extensions and themes (M)
 
+Progress (2026-10-10): migration `0004_settings.sql`; validated theme settings with contrast checks and two presets; homepage sections, footer and SEO defaults; admin theme and extensions pages; extension API v1 (delivery, discount, order events, storefront sections) with a registry, compatibility rules, bounds and timeouts; sample extension; Bengali storefront catalogue; product search. 187 automated tests pass. Verified over HTTP on the dev server: warm preset, Bengali locale, footer, extension section, search, and the free-delivery extension changing a real checkout total with no change to the commerce core's tables or state machine. Not done: using the theme and extensions admin screens in a browser, a Bengali review by a native speaker (translations were written by the assistant), and full-text search.
+
 - Theme settings schema (colours, typography, homepage sections, footer, SEO defaults) stored as validated settings with a settings page.
 - Extension interface: documented hooks for pricing, order events and storefront sections; compatibility rules and tests.
 - Bengali storefront strings; storefront search.

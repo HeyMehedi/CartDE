@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Browser-only code. Checkout (FR-ORD-1, FR-ORD-4): idempotency key per page load, server re-prices everything.
 import { clearCart, getCart, money, toQuery } from "./cart";
+import { t } from "./i18n";
 
 const KEY_STORE = "cartde.checkout.key";
 const form = document.getElementById("checkout-form");
@@ -20,7 +21,7 @@ async function loadSummary() {
 	const district = form.district.value;
 	const res = await fetch(`/api/cartde/cart/validate?lines=${encodeURIComponent(toQuery(lines))}${district ? `&district=${encodeURIComponent(district)}` : ""}`);
 	const json = await res.json();
-	if (!json.ok) { errBox.hidden = false; errBox.textContent = json.error?.message ?? "Could not load your cart."; return; }
+	if (!json.ok) { errBox.hidden = false; errBox.textContent = json.error?.message ?? t("checkout.review_cart"); return; }
 	data = json.data;
 	document.getElementById("summary").replaceChildren(...data.lines.map((l) => {
 		const tr = document.createElement("tr");
@@ -30,10 +31,12 @@ async function loadSummary() {
 		tr.append(a, b); return tr;
 	}));
 	document.getElementById("sub").textContent = fmt(data.subtotal_minor);
-	document.getElementById("del").textContent = data.delivery_minor === null ? "Choose a district" : fmt(data.delivery_minor);
-	document.getElementById("tot").textContent = fmt(data.subtotal_minor + (data.delivery_minor ?? 0));
+	document.getElementById("del").textContent = data.delivery_minor === null ? t("checkout.choose_district") : fmt(data.delivery_minor);
+	const discountRow = document.getElementById("disc-row");
+	if (discountRow) { discountRow.hidden = !data.discount_minor; document.getElementById("disc").textContent = "−" + fmt(data.discount_minor || 0); }
+	document.getElementById("tot").textContent = data.total_minor === null ? fmt(data.subtotal_minor) : fmt(data.total_minor);
 	document.getElementById("place").disabled = !data.purchasable;
-	if (!data.purchasable) { errBox.hidden = false; errBox.textContent = "Some items in your cart are unavailable. Please review your cart."; }
+	if (!data.purchasable) { errBox.hidden = false; errBox.textContent = t("checkout.review_cart"); }
 }
 
 function showFieldErrors(fields = {}) {
@@ -55,13 +58,13 @@ form.addEventListener("submit", async (e) => {
 		const json = await res.json().catch(() => null);
 		if (!json?.ok) {
 			showFieldErrors(json?.error?.fields);
-			errBox.hidden = false; errBox.textContent = json?.error?.message ?? "We could not place your order. Please try again.";
+			errBox.hidden = false; errBox.textContent = json?.error?.message ?? t("checkout.failed");
 			if (res.status === 409) await loadSummary();
 			btn.disabled = false; return;
 		}
 		try { sessionStorage.removeItem(KEY_STORE); } catch {}
 		clearCart();
 		location.href = `/orders/${json.data.order_number}?t=${encodeURIComponent(json.data.access_token)}`;
-	} catch { errBox.hidden = false; errBox.textContent = "Network problem. Your order was not placed; please try again."; btn.disabled = false; }
+	} catch { errBox.hidden = false; errBox.textContent = t("checkout.network_error"); btn.disabled = false; }
 });
 loadSummary();

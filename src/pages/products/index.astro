@@ -1,28 +1,30 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { adminCategories, adminStore, mediaUrls, storefrontProducts } from "../../cartde/app/catalogue";
+import { adminCategories, mediaUrls, storefrontProducts } from "../../cartde/app/catalogue";
+import { storefrontContext } from "../../cartde/app/storefront";
 import { formatMoney } from "../../cartde/domain/money";
 
+const { store, t } = await storefrontContext();
 const category = Astro.url.searchParams.get("category") || undefined;
 const page = Math.max(1, Number(Astro.url.searchParams.get("page")) || 1);
-const [{ items, total, pageSize }, store, categories] = await Promise.all([storefrontProducts({ category, page }), adminStore(), adminCategories()]);
+const [{ items, total, pageSize }, categories] = await Promise.all([storefrontProducts({ category, page }), adminCategories()]);
 const urls = await mediaUrls(items.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
 const pages = Math.max(1, Math.ceil(total / pageSize));
 const href = (n: number) => `/products?${new URLSearchParams({ ...(category ? { category } : {}), ...(n > 1 ? { page: String(n) } : {}) })}`;
 const canonical = new URL(href(page), Astro.url).toString();
 ---
 
-<Base title="Shop" canonical={canonical}>
-	<h1>Shop</h1>
+<Base title={t("products.title")} canonical={canonical}>
+	<h1>{t("products.title")}</h1>
 	{
 		categories.length > 0 && (
-			<ul class="cd-chips" aria-label="Categories">
-				<li><a href="/products" aria-current={!category ? "true" : undefined}>All</a></li>
+			<ul class="cd-chips" aria-label={t("home.categories")}>
+				<li><a href="/products" aria-current={!category ? "true" : undefined}>{t("products.all")}</a></li>
 				{categories.map((c) => <li><a href={`/products?category=${c.slug}`} aria-current={category === c.slug ? "true" : undefined}>{c.name}</a></li>)}
 			</ul>
 		)
 	}
-	{items.length === 0 && <p class="cd-muted">No products are available yet.</p>}
+	{items.length === 0 && <p class="cd-muted">{t("products.none")}</p>}
 	<ul class="cd-grid">
 		{
 			items.map((p) => (
@@ -39,9 +41,9 @@ const canonical = new URL(href(page), Astro.url).toString();
 	{
 		pages > 1 && (
 			<nav class="cd-pager" aria-label="Pagination">
-				{page > 1 && <a href={href(page - 1)} rel="prev">← Newer</a>}
-				<span>Page {page} of {pages}</span>
-				{page < pages && <a href={href(page + 1)} rel="next">Older →</a>}
+				{page > 1 && <a href={href(page - 1)} rel="prev">{t("products.newer")}</a>}
+				<span>{t("products.page_of", { page, pages })}</span>
+				{page < pages && <a href={href(page + 1)} rel="next">{t("products.older")}</a>}
 			</nav>
 		)
 	}

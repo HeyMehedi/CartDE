@@ -1,9 +1,10 @@
 import type { z } from "zod";
 import { computeTotals, normalizeCart } from "../domain/cart";
 import { zoneFor } from "../domain/geo/districts";
+import type { ExtensionRuntime } from "../extensions/types";
 import { ORDER_STATUSES, canTransition, transitionEffect, type OrderStatus, type PaymentStatus } from "../domain/orders";
 import type { checkoutInput, orderTransitionInput } from "../domain/schemas";
-import { getStore } from "./store";
+import { getStore, type StoreRow } from "./store";
 import { CartdeError, isUniqueViolation, newId, nowIso } from "./util";
 
 export interface CartLineView {
@@ -79,8 +80,26 @@ async function findByKey(db: D1Database, key: string): Promise<PlacedOrder | nul
 	return row ? { ...row, existing: true } : null;
 }
 
+/** Optional collaborators. The core works without them; extensions plug in through `extensions`. */
+export interface OrderHooks {
+	extensions?: ExtensionRuntime;
+}
+
+/** The single place totals are computed, for both the cart preview and the real order, so they cannot disagree. */
+export async function quoteTotals(store: StoreRow, lines: readonly CartLineView[], district: string, extensions?: ExtensionRuntime) {
+	const baseDelivery = zoneFor(district) === "inside_dhaka" ? store.delivery_inside_dhaka_minor : store.delivery_outside_dhaka_minor;
+	const subtotal = lines.reduce((sum, l) => sum + l.unit_price_minor * l.quantity, 0);
+	const adjusted = extensions
+		? await extensions.adjustPricing({
+				currency: store.currency, district, subtotal_minor: subtotal, delivery_minor: baseDelivery,
+				lines: lines.map((l) => ({ product_id: l.product_id, variant_id: l.variant_id, quantity: l.quantity, unit_price_minor: l.unit_price_minor })),
+			})
+		: { delivery_minor: baseDelivery, discount_minor: 0 };
+	return computeTotals(lines, adjusted.delivery_minor, adjusted.discount_minor);
+}
+
 /** FR-ORD-2..5, FR-ORD-7: one atomic batch; retried submissions with the same key return the same order. */
-export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutInput>): Promise<PlacedOrder> {
+export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutInput>, hooks: OrderHooks = {}): Promise<PlacedOrder> {
 	const prior = await findByKey(db, input.idempotency_key);
 	if (prior) return prior;
 
@@ -91,8 +110,7 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 	const bad = lines.find((l) => !l.available);
 	if (bad) throw new CartdeError("conflict", `${bad.product_name}${bad.variant_title && bad.variant_title !== "Default" ? ` (${bad.variant_title})` : ""}: ${bad.problem}`, { [bad.variant_id]: bad.problem ?? "Unavailable" });
 
-	const delivery = zoneFor(input.district) === "inside_dhaka" ? store.delivery_inside_dhaka_minor : store.delivery_outside_dhaka_minor;
-	const totals = computeTotals(lines, delivery);
+	const totals = await quoteTotals(store, lines, input.district, hooks.extensions);
 	const orderId = newId();
 	const accessToken = token();
 	const now = nowIso();
@@ -151,6 +169,10 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 	}
 	const placed = await findByKey(db, input.idempotency_key);
 	if (!placed) throw new Error("Order was not stored.");
+	await hooks.extensions?.emitOrderEvent({
+		type: "order.placed", order_number: placed.order_number, status: "pending", from_status: null,
+		total_minor: placed.total_minor, currency: store.currency, item_count: lines.reduce((n, l) => n + l.quantity, 0),
+	});
 	return { ...placed, existing: false };
 }
 
@@ -221,7 +243,7 @@ export async function listOrders(db: D1Database, opts: { q?: string; status?: st
 // ---------- writes ----------
 
 /** FR-ORD-9: transition with its side effects in one atomic batch, conditional on the status the caller saw. */
-export async function transitionOrder(db: D1Database, orderId: string, input: z.infer<typeof orderTransitionInput>, actorUserId: string | null): Promise<OrderDetail> {
+export async function transitionOrder(db: D1Database, orderId: string, input: z.infer<typeof orderTransitionInput>, actorUserId: string | null, hooks: OrderHooks = {}): Promise<OrderDetail> {
 	const order = await getOrder(db, orderId);
 	if (!canTransition(order.status, input.to)) {
 		try { transitionEffect(order.status, input.to, order.payment_status); } catch (err) { throw new CartdeError("conflict", (err as Error).message); }
@@ -249,7 +271,12 @@ export async function transitionOrder(db: D1Database, orderId: string, input: z.
 		if (isGuardFailure(err)) throw new CartdeError("conflict", "This order was changed by someone else. Reload and try again.");
 		throw err;
 	}
-	return getOrder(db, orderId);
+	const updated = await getOrder(db, orderId);
+	await hooks.extensions?.emitOrderEvent({
+		type: "order.status_changed", order_number: updated.order_number, status: updated.status, from_status: order.status,
+		total_minor: updated.total_minor, currency: updated.currency, item_count: updated.items.reduce((n, i) => n + i.quantity, 0),
+	});
+	return updated;
 }
 
 /** FR-ORD-10: the only order field a merchant can edit after creation. */
