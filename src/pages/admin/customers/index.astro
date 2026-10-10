@@ -8,6 +8,7 @@ const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeZo
 
 <AdminLayout title="Customers" active="customers">
 	<h1>Customers</h1>
+	<p><a href="/api/cartde/admin/export/customers.csv">Download CSV</a></p>
 	<form method="get" class="row"><div><label for="q">Search name or phone</label><input id="q" name="q" type="text" value={q} /></div><button type="submit">Search</button></form>
 	{
 		customers.length === 0 ? <p class="muted">No customers yet.</p> : (

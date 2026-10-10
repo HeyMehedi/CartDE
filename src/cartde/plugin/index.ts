@@ -8,6 +8,10 @@
  */
 import { definePlugin } from "emdash";
 import { extensionRuntime } from "../app/extensions";
+import { buildAdminBlocks } from "./admin-page";
+import { overview } from "../db/orders";
+import { getStore } from "../db/store";
+import { startOfDayUtc } from "../domain/time";
 import { CartdeError } from "../db/util";
 import { executeTool, TOOL_NAMES, TOOLS, ToolInputError, type ToolName } from "../mcp/tools";
 
@@ -42,6 +46,21 @@ const routes = Object.fromEntries(
 	]),
 );
 
+/** Block Kit page shown under "CartDE" in EmDash's sidebar. Private route: EmDash checks the permission first. */
+const adminRoute = {
+	permission: TOOL_PERMISSION,
+	handler: async (ctx: { request: Request }) => {
+		const origin = new URL(ctx.request.url).origin;
+		try {
+			const db = await database();
+			const store = await getStore(db);
+			return buildAdminBlocks({ origin, storeName: store.name, setupComplete: !!store.setup_completed_at, overview: await overview(db, startOfDayUtc(store.timezone).toISOString()) });
+		} catch {
+			return buildAdminBlocks({ origin, storeName: "CartDE", setupComplete: null, overview: null });
+		}
+	},
+};
+
 const mcpTools = Object.fromEntries(
 	TOOL_NAMES.map((name) => [name, { description: TOOLS[name].description, route: name, input: TOOLS[name].input, destructive: TOOLS[name].destructive }]),
 );
@@ -52,7 +71,8 @@ export function createPlugin() {
 		version: PLUGIN_VERSION,
 		capabilities: [],
 		// The route/tool maps are built from the registry above; their value types are checked by EmDash at startup.
-		routes: routes as never,
+		routes: { ...routes, admin: adminRoute } as never,
+		admin: { pages: [{ path: "/commerce", label: "CartDE", icon: "shopping-cart" }] },
 		mcp: { tools: mcpTools } as never,
 	});
 }

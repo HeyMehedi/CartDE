@@ -238,10 +238,12 @@ export async function updateProduct(
 	return getProduct(db, id);
 }
 
-/** FR-CAT-8: products with orders cannot be deleted. Orders arrive in 0.3; until then drafts only. */
+/** FR-CAT-8: only drafts that were never ordered can be deleted; everything else is archived instead. */
 export async function deleteProduct(db: D1Database, id: string): Promise<void> {
 	const product = await getProduct(db, id);
 	if (product.status !== "draft") throw new CartdeError("conflict", "Only draft products can be deleted; archive it instead.");
+	const ordered = await db.prepare(`SELECT 1 AS x FROM cartde_order_items WHERE product_id = ?1 LIMIT 1`).bind(id).first();
+	if (ordered) throw new CartdeError("conflict", "This product has orders, so it cannot be deleted. Archive it instead.");
 	await db.prepare(`DELETE FROM cartde_products WHERE id = ?1`).bind(id).run();
 }
 

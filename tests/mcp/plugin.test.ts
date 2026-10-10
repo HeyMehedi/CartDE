@@ -18,12 +18,19 @@ describe("CartDE EmDash plugin", () => {
 	});
 
 	it("exposes one private, Admin-level route per tool", () => {
-		expect(Object.keys(plugin.routes).sort()).toEqual([...TOOL_NAMES].sort());
+		expect(Object.keys(plugin.routes).sort()).toEqual([...TOOL_NAMES, "admin"].sort());
 		for (const route of Object.values(plugin.routes)) {
 			expect(route.public).toBeFalsy();
 			expect(route.permission).toBe(TOOL_PERMISSION);
 		}
 		expect(TOOL_PERMISSION).toBe("settings:manage");
+	});
+
+	it("adds a sidebar page backed by the private admin route", () => {
+		const admin = (plugin as unknown as { admin: { pages: { path: string; label: string }[] } }).admin;
+		expect(admin.pages).toEqual([expect.objectContaining({ path: "/commerce", label: "CartDE" })]);
+		expect(plugin.routes.admin!.permission).toBe(TOOL_PERMISSION);
+		expect(plugin.routes.admin!.public).toBeFalsy();
 	});
 
 	it("registers every tool with its route and destructive flag", () => {

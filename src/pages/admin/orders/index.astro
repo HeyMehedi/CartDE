@@ -16,6 +16,7 @@ const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeSt
 
 <AdminLayout title="Orders" active="orders">
 	<h1>Orders</h1>
+	<p><a href="/api/cartde/admin/export/orders.csv">Download CSV</a></p>
 	<form method="get" class="row">
 		<div><label for="q">Search (number, phone, name)</label><input id="q" name="q" type="text" value={q} /></div>
 		<div>
