@@ -1,6 +1,6 @@
 # Extensions and themes
 
-Status: implemented in milestone 0.6. Covered by automated tests and an HTTP run against the dev server (theme, Bengali strings, search and the sample extension through a real checkout). The admin screens for the theme and extensions have not been used in a browser.
+Status: implemented in milestone 0.6. Verified by unit tests and by the browser suite, which switches to the warm preset, refuses a low-contrast colour, enables the sample extension (free delivery applied to a real quote) and shows the Bengali storefront. Both presets pass an automated WCAG 2.1 AA scan.
 
 ## Themes
 

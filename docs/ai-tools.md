@@ -1,6 +1,6 @@
 # AI tools (MCP)
 
-Status: implemented in milestone 0.5. Verified by automated tests of the tool logic, the plugin definition and the access rules; **not yet verified with a live MCP client** (that needs a logged-in administrator and an OAuth consent, which could not be done from the development environment).
+Status: implemented in milestone 0.5 and verified end to end on 2026-10-10: the browser test suite enables the plugin's MCP tools, creates a personal access token, lists the tools and calls them through `/_emdash/api/mcp`. Refusals come back with `isError: true`, unknown arguments such as `store_id` are rejected, and a token without the `mcp:tools` scope gets `INSUFFICIENT_SCOPE`. Not run: the OAuth consent flow of a third-party client such as Claude or ChatGPT (EmDash's code, same scopes).
 
 CartDE adds nine tools to EmDash's built-in MCP server through a native plugin (`src/cartde/plugin/`, registered in `astro.config.mjs`). EmDash provides the transport, OAuth 2.1 with PKCE, personal access tokens, scopes and the consent screen. CartDE provides the tools and the business rules behind them. No external model API key is needed or used.
 
@@ -40,4 +40,3 @@ Tools appear as `cartde__<tool>`.
 
 - The audit entry is written after the change succeeds, as a separate statement. If that write fails, the change stands and an error is logged.
 - Discounts are drafts only; applying them at checkout is not built.
-- The tools were not exercised through a real MCP client or the EmDash consent flow.

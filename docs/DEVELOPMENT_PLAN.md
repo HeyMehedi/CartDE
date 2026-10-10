@@ -109,9 +109,9 @@ Goal: the unchanged EmDash foundation works locally and remotely, branded as Car
 - [x] Add `.env.example` with `EMDASH_ENCRYPTION_KEY` and `EMDASH_SITE_URL` placeholders and comments (deploy button reads this file for secret prompts).
 - [x] Add `LICENSE` (MIT unless the owner chooses otherwise), `README.md` (what, status table, local dev, deploy, links), `CONTRIBUTING.md`, `SECURITY.md`, `docs/architecture.md`, `docs/development.md`, `docs/deployment.md`. Keep `docs/PRD.md`, `docs/SRS.md`, `docs/DEVELOPMENT_PLAN.md`.
 - [x] Add `.github/workflows/ci.yml`: checkout, pnpm via `packageManager`, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm build`, `pnpm wrangler deploy --dry-run`.
-- [ ] Run locally (partly done: homepage and setup redirect checked over HTTP; the setup wizard passkey and media upload still need a browser): `pnpm install`, `pnpm typecheck`, `pnpm build`, `pnpm dev`; complete the EmDash setup wizard at `/_emdash/admin`; upload an image to the media library; create a page; confirm the homepage renders the CartDE brand. Record results in the pull request.
+- [x] Run locally (2026-10-10: browser tests sign in through EmDash's development bypass, upload media and create content; the passkey wizard was completed by the owner on production): `pnpm install`, `pnpm typecheck`, `pnpm build`, `pnpm dev`; complete the EmDash setup wizard at `/_emdash/admin`; upload an image to the media library; create a page; confirm the homepage renders the CartDE brand. Record results in the pull request.
 - [x] Deployment (done 2026-10-10, see docs/deployment.md; wizard, media upload and image rendering still to verify in a browser): `pnpm build`, `pnpm wrangler secret put EMDASH_ENCRYPTION_KEY`, `pnpm wrangler secret put EMDASH_SITE_URL`, `pnpm wrangler deploy`; open the Worker URL and complete the wizard immediately; upload media; record the compressed bundle size and whether image rendering works.
-- [~] Verify free-tier fit (limits recorded 2026-10-10 in docs/deployment.md; CPU time per request still unmeasured): confirm the current Workers, D1, R2 and Images free limits on Cloudflare's pricing pages, record the dates checked, and measure CPU time per request on the deployed baseline's home and product pages against the free plan CPU limit. Record the result in `docs/deployment.md` before any "free hosting" claim appears in the README.
+- [x] Verify free-tier fit (2026-10-10: limits recorded and CPU measured on production; CartDE does not fit the 10 ms Free-plan CPU limit, so Workers Paid is recommended; see docs/deployment.md): confirm the current Workers, D1, R2 and Images free limits on Cloudflare's pricing pages, record the dates checked, and measure CPU time per request on the deployed baseline's home and product pages against the free plan CPU limit. Record the result in `docs/deployment.md` before any "free hosting" claim appears in the README.
 - [ ] Publish the public GitHub repository (blocked: owner names it) (owner names it) and push.
 
 ### Deliverables
@@ -127,6 +127,8 @@ Branded, documented, version-controlled scaffold with green CI and a baseline de
 No commerce tables, no admin pages, no theme system.
 
 ## 5. Milestones 0.2 to 0.6
+
+**Status at the end of 2026-10-10.** All six milestones are built and deployed. Per-requirement evidence is in [traceability.md](traceability.md); the progress notes below were written as each milestone landed and some of their "not done" items have since been closed there (Playwright, accessibility, restore rehearsal, MCP client, CPU measurement).
 
 Sizes are relative (S, M, L, XL) rather than dates; each milestone depends on the previous one being accepted.
 

@@ -8,14 +8,14 @@ CartDE (Cart Digital Engine) is an open-source online store that you deploy to y
 
 | Area | Status |
 | --- | --- |
-| Foundation: EmDash 1.2.0 on Astro, Workers, D1, R2 | Implemented. Deployed to Cloudflare on 2026-10-10 (0.1 baseline, then 0.2 to 0.6 the same day). |
-| Admin login and media library (from EmDash) | Available locally through the EmDash admin. Not yet verified end to end in this repository. |
-| Product catalogue: products, variants, categories, stock, store settings, admin pages and API (`/admin`) | Partial (milestone 0.2). Domain, database and API are covered by automated tests; the admin pages are not yet browser-tested. |
-| Storefront: home, product list (24 per page, category filter), product page with variant selector and Product JSON-LD, cart, cash-on-delivery checkout, order confirmation | Partial (milestone 0.3). Server logic is covered by automated tests and an HTTP smoke run; the browser screens have not been exercised in a real browser. |
-| Orders: placement with atomic stock decrement, idempotent retries, status workflow with stock restore, customers, printable summary | Partial (milestone 0.3). Same verification as above. |
+| Foundation: EmDash 1.2.0 on Astro, Workers, D1, R2 | Implemented. Deployed to Cloudflare on 2026-10-10 and open. Needs the Workers Paid plan for reliable CPU headroom (measured; see docs/deployment.md). |
+| Admin login and media library (from EmDash) | Verified: browser tests upload media locally; the owner signed in with a passkey on production. CartDE also appears in EmDash's sidebar. |
+| Product catalogue: products, variants, categories, stock, store settings, admin pages and API (`/admin`) | Implemented (0.2). Unit tests plus browser tests that create, preview and publish a product with variants and an image. |
+| Storefront: home, product list (24 per page, category filter), product page with variant selector and Product JSON-LD, cart, cash-on-delivery checkout, order confirmation | Implemented (0.3). Browser tests order from an emulated 360 px phone, with and without JavaScript. Not yet tried on a physical phone. |
+| Orders: placement with atomic stock decrement, idempotent retries, status workflow with stock restore, customers, printable summary | Implemented (0.3). Browser tests manage an order to Delivered and cancel one (stock restored); a parallel-checkout test proves the last unit sells once. |
 | First-run store setup (`/setup`), store-not-ready page, Time Travel restore-point script, deployment and recovery guide | Implemented in code and tests (milestone 0.4). The deploy button and a clean-account install are untested. |
-| AI tools through MCP (9 tools), activity log | Partial (milestone 0.5). Logic, permissions and audit are covered by tests; not yet tried with a live MCP client. See [docs/ai-tools.md](docs/ai-tools.md). |
-| Themes (2 presets, validated settings, homepage sections, footer), extension hooks with a sample, Bengali storefront, product search | Partial (milestone 0.6). Server logic and storefront verified by tests and an HTTP run; the admin theme/extension screens are not yet used in a browser. See [docs/extensions.md](docs/extensions.md). |
+| AI tools through MCP (9 tools), activity log | Implemented (0.5). Tested with a real MCP request flow and personal access token, including scope refusal. See [docs/ai-tools.md](docs/ai-tools.md). |
+| Themes (2 presets, validated settings, homepage sections, footer), extension hooks with a sample, Bengali storefront, product search | Implemented (0.6). Browser tests switch preset, enable the sample extension and the Bengali storefront. Bengali text awaits a native speaker's review. See [docs/extensions.md](docs/extensions.md). |
 | Online payment gateways, courier and messaging integrations | Not planned for the initial releases |
 
 Rows marked Partial or Planned are not finished. See [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) for the milestone plan.

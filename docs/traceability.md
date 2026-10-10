@@ -128,7 +128,7 @@ The OAuth consent flow of a third-party AI client (Claude, ChatGPT) was not run;
 | NFR-2 Money | Done | Integer minor units |
 | NFR-3 Concurrency | Done | 8 parallel checkouts for the last unit on local D1 (workerd): exactly one order. Not repeated against remote D1 |
 | NFR-4 Idempotency | Done | Checkout (both paths), setup, migrations |
-| NFR-5 Performance (200 ms server time p95) | Not met | Measured: home 302 ms, products 187 ms median wall time. See deployment.md |
+| NFR-5 Performance (200 ms server time p95) | Not met at p95 | After parallelising the home page: home 174 ms median / 463 ms p95, products 126 / 368 ms. Medians meet the target; p95 does not (cold starts). See deployment.md |
 | NFR-6 Accessibility | Done (automated) | No serious or critical axe findings on storefront (both presets) and admin. No screen-reader session with a person |
 | NFR-7 Mobile 360 px | Done (emulated) | E2E checks every storefront and admin page for sideways scrolling at 360 px. Not tried on a physical phone |
 | NFR-8 Localisation | Partial | Storefront English and Bengali; admin English only |
@@ -173,6 +173,6 @@ The OAuth consent flow of a third-party AI client (Claude, ChatGPT) was not run;
 
 1. Publish the GitHub repository (the command was blocked by this environment's permission check) and test the deploy button from a clean Cloudflare account.
 2. Decide the hosting plan: CartDE needs Workers Paid for reliable CPU headroom.
-3. Speed up the home page (route cache or fewer sections) to meet NFR-5, then load-test with 1,000 products.
+3. Add route caching to bring the p95 under 200 ms (NFR-5), then load-test with 1,000 products.
 4. Native-speaker review of the Bengali strings.
 5. Place one order from a physical phone on the live site.

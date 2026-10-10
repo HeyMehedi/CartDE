@@ -33,6 +33,16 @@ Status: baseline deployed on 2026-10-10 to `https://cartde.heymehedi.workers.dev
 | `/sitemap.xml`, `/sitemap-products.xml`, `/robots.txt` | 200; product sitemap listed in the index; CartDE paths disallowed |
 | Cross-site form post to `/checkout` | 403 |
 
+### Redeploy with end-to-end fixes (2026-10-10, live store)
+
+| Step | Result |
+| --- | --- |
+| Before deploying | Time Travel bookmark `00000023-00000000-00005100-22b001d85f7f5d52d9e925389eb85348`; commerce export saved locally to the git-ignored `backups/` |
+| `pnpm deploy` | No new migrations; version `1c29fc3a-2423-47ea-8033-348bc95db7cc` |
+| Storefront (`/`, `/products`, `/cart`, `/checkout`, `/search`) | 200 (the store is set up and open) |
+| Admin, setup, admin APIs, plugin route | 302 to login / 401 |
+| EmDash dev bypass | 403 (development only) |
+
 ## Resources
 
 | Resource | Name | Created by |
@@ -125,7 +135,7 @@ Measured with `wrangler tail --format json` on 2026-10-10 against https://cartde
 
 This contradicts PRD §7 ("Runs on the Cloudflare Workers free plan by default") and SRS NFR-10; see docs/traceability.md. Most of the CPU is EmDash's runtime (`/posts`, which runs no CartDE code, costs 13 ms), so the fix is not in CartDE alone.
 
-**Server time (SRS NFR-5, target under 200 ms at p95).** Not met for the home page (302 ms median wall time); `/products` is at 187 ms median. Wall time includes waiting for D1. The home page makes the most queries; caching it with Astro's route cache, or trimming its sections, are the next steps. A load test with 1,000 products has not been done.
+**Server time (SRS NFR-5, target under 200 ms at p95).** After the home page's database reads were made parallel (redeploy of 2026-10-10), 10 requests each measured: home 174 ms median, 463 ms p95; `/products` 126 ms median, 368 ms p95 (CPU medians 16 ms and 9 ms). The median is now under 200 ms; the p95 is not, mostly because of cold starts. Wall time includes waiting for D1. Caching the storefront with Astro's route cache (or Workers Cache) is the next step for the p95. A load test with 1,000 products has not been done.
 
 **D1 writes.** Each order writes roughly 12 to 20 rows (stock updates, order, items, events, customer), so the Free plan's 100,000 daily writes allow on the order of 5,000 orders a day before other writes.
 
