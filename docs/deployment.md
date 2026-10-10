@@ -74,20 +74,24 @@ CartDE's tables are created by numbered files in `migrations/`, tracked by Wrang
 
 `/setup` requires an administrator, is safe to run again, and records `setup_completed_at` only the first time. Demo products are added only if you tick the box and the catalogue is empty. Nothing in CartDE can reset or reseed a store.
 
-## Free plan fit (to verify)
+## Free plan fit (limits checked 2026-10-10; CPU time not yet measured)
 
-Checked against the Cloudflare Workers limits page (updated 2026-10-08):
+Figures below were read from Cloudflare's documentation on 2026-10-10. They change; re-check before relying on them.
 
-| Limit | Workers Free |
-| --- | --- |
-| Script size | 64 MiB uncompressed (compressed size not limited) |
-| CPU time per request | 10 ms |
-| Requests per day | 100,000 |
-| Subrequests per request | 50 |
+| Service | Free allowance | Source |
+| --- | --- | --- |
+| Workers requests | 100,000 per day (resets midnight UTC) | https://developers.cloudflare.com/workers/platform/limits/ |
+| Workers CPU time | 10 ms per HTTP request | same |
+| Workers subrequests | 50 per request | same |
+| Worker size | 64 MiB uncompressed, no compressed limit. CartDE 0.6 is 18.0 MiB (4.6 MiB gzip) | same |
+| D1 rows read / written | 5 million / 100,000 per day | https://developers.cloudflare.com/d1/platform/pricing/ |
+| D1 storage | 5 GB total across the account | same |
+| R2 | 10 GB-month storage, 1 million Class A and 10 million Class B operations per month, free egress | https://developers.cloudflare.com/r2/pricing/ |
+| Images transformations | 5,000 unique per month. The docs do not say outright whether the Images *binding* counts against this; assume it does | https://developers.cloudflare.com/images/pricing/ |
 
-The 0.6 build uploads 18,462 KiB uncompressed (4,751 KiB gzipped, measured by `wrangler deploy --dry-run` on 2026-10-10), which is within the script size limit. The 10 ms CPU limit is not yet measured for the storefront. Measuring it on a deployed baseline is an open task in the Development Plan.
+**What this means for a shop.** Storage and request volumes in these tables suit a small store. The open risk is the **10 ms CPU limit**: EmDash, server rendering and the checkout batch all run in the Worker, and a request that exceeds the limit fails. I have not measured CPU time per request on the deployed Worker (wall-clock times of 0.4 to 1 s include network and database latency and say nothing about CPU). Until it is measured with `wrangler tail` or the Workers dashboard under real traffic, the README makes no "free hosting" claim, and the supported assumption is the **Workers Paid plan** (also needed for sandboxed plugins).
 
-D1, R2 and Images free-tier limits are not yet recorded here. Record them with their check date before any free hosting claim is published.
+D1 write limits matter at checkout: each order writes roughly 12 to 20 rows (stock updates, order, items, events, customer), so the 100,000 daily write limit allows on the order of 5,000 orders a day before other writes.
 
 ## Backups and restore
 
@@ -129,6 +133,6 @@ A restore to a bookmark rolls back everything after it, including orders placed 
 
 - Deploy button from a clean Cloudflare account and a fresh GitHub fork.
 - Passkey setup, media upload and image rendering through the Images binding on the deployed Worker.
-- CPU time per request against the free-plan limit.
+- CPU time per request against the 10 ms free-plan limit.
 - A rehearsed Time Travel restore, and EmDash's site export including `cartde_*` tables.
 - Behaviour of the 0.2 to 0.6 code on the deployed Worker. The deployed baseline is still the 0.1 code, and the remote database does not yet have the commerce migrations (`pnpm deploy` applies them).
