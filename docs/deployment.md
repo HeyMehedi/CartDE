@@ -22,6 +22,17 @@ Status: baseline deployed on 2026-10-10 to `https://cartde.heymehedi.workers.dev
 | EmDash wizard | `needsSetup:false`, so an administrator account exists |
 | Not done | CartDE `/setup` (needs the administrator), any authenticated check, CPU time measurement |
 
+### Redeploy after the requirements audit (2026-10-10)
+
+| Step | Result |
+| --- | --- |
+| Restore point | Bookmark `00000015-0000000e-00005100-b49a8ec34c85e0abb3c815aea38ace5e` |
+| `pnpm deploy` | No new migrations. Rate-limit bindings accepted by Cloudflare on this account |
+| Storefront, admin, `/setup` | 503 not-ready page; 302 to login; unchanged |
+| New endpoints (CSV export and import, EmDash sidebar page route) | 401 without a session |
+| `/sitemap.xml`, `/sitemap-products.xml`, `/robots.txt` | 200; product sitemap listed in the index; CartDE paths disallowed |
+| Cross-site form post to `/checkout` | 403 |
+
 ## Resources
 
 | Resource | Name | Created by |
