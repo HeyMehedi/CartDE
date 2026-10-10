@@ -15,3 +15,6 @@ data.db
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# D1 exports contain merchant and customer data
+backups/

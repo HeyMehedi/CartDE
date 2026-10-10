@@ -22,6 +22,15 @@ const f = (n: number) => (n / 100).toFixed(2);
 			<div><label for="contact_phone">Contact phone</label><input id="contact_phone" type="text" value={store.contact_phone ?? ""} /></div>
 			<div><label for="contact_email">Contact email</label><input id="contact_email" type="email" value={store.contact_email ?? ""} /></div>
 		</div>
+		<div class="row">
+			<div>
+				<label for="status">Store status</label>
+				<select id="status">
+					<option value="active" selected={store.status !== "paused"}>Open</option>
+					<option value="paused" selected={store.status === "paused"}>Paused (no new orders)</option>
+				</select>
+			</div>
+		</div>
 		<label for="address_text">Address</label>
 		<textarea id="address_text" rows="2">{store.address_text ?? ""}</textarea>
 		<fieldset>

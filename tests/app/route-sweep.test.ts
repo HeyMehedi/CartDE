@@ -24,7 +24,10 @@ function toPath(file: string): string {
 	);
 }
 
-const adminFiles = walk(pagesDir).filter((f) => /\/(admin|api\/cartde\/admin)(\/|\.)/.test("/" + relative(pagesDir, f)) || /^(admin)\b/.test(relative(pagesDir, f)));
+const adminFiles = walk(pagesDir).filter((f) => {
+	const rel = "/" + relative(pagesDir, f);
+	return /\/(admin|api\/cartde\/admin)(\/|\.)/.test(rel) || /^\/setup\./.test(rel);
+});
 const methods = ["GET", "POST", "PATCH", "DELETE"];
 
 describe("route sweep: every admin route refuses anonymous and non-admin callers", () => {

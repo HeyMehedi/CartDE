@@ -76,6 +76,8 @@ export const storeSettingsInput = z.object({
 	delivery_inside_dhaka_minor: minor,
 	delivery_outside_dhaka_minor: minor,
 	low_stock_threshold: z.number().int().min(0).max(100_000),
+	/** Pause or reopen the store. "setup" is only ever set by the system. */
+	status: z.enum(["active", "paused"]).optional(),
 });
 
 export const cartLineInput = z.object({
@@ -114,3 +116,5 @@ export const orderTransitionInput = z.object({
 });
 
 export const merchantNoteInput = z.object({ merchant_note: trimmed(2000).nullable() });
+
+export const setupInput = storeSettingsInput.extend({ with_demo_products: z.boolean().default(false) });

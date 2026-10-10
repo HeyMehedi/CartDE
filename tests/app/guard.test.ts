@@ -14,6 +14,12 @@ const req = (over: Partial<GuardRequest> & { headers?: Record<string, string> } 
 };
 
 describe("guard", () => {
+	it("treats /setup as an admin-only page", () => {
+		expect(decide(req({ pathname: "/setup", user: null }))).toMatchObject({ action: "redirect" });
+		expect(decide(req({ pathname: "/setup", user: { role: 40 } }))).toMatchObject({ status: 403 });
+		expect(decide(req({ pathname: "/setup" }))).toEqual({ action: "allow" });
+	});
+
 	it("ignores public paths", () => {
 		expect(decide(req({ pathname: "/", user: null }))).toEqual({ action: "allow" });
 		expect(decide(req({ pathname: "/administrator", user: null }))).toEqual({ action: "allow" });

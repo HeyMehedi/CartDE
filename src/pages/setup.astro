@@ -1,0 +1,61 @@
+---
+import { adminStore } from "../cartde/app/catalogue";
+import AdminLayout from "../layouts/AdminLayout.astro";
+let store;
+let migrationsMissing = false;
+try {
+	store = await adminStore();
+} catch {
+	migrationsMissing = true;
+}
+const data = JSON.stringify(store ?? {}).replace(/</g, "\\u003c");
+const f = (n: number) => (n / 100).toFixed(2);
+const done = !!store?.setup_completed_at;
+---
+
+<AdminLayout title="Store setup">
+	<h1>{done ? "Store setup" : "Set up your store"}</h1>
+	{
+		migrationsMissing ? (
+			<p class="error">
+				The CartDE database tables are missing. Run <code>pnpm db:migrate</code> (local) or <code>pnpm deploy</code> (production, which applies migrations first), then reload this page.
+			</p>
+		) : (
+			<>
+				{done && <p class="ok">Setup is complete. You can change these values here or under <a href="/admin/settings">Settings</a>.</p>}
+				{!done && <p>One last step before shoppers can see your store. You can change everything later.</p>}
+				<div id="msg" role="alert" hidden class="error"></div>
+				<script type="application/json" id="store-data" set:html={data} />
+				<form id="setup-form">
+					<label for="name">Store name</label>
+					<input id="name" type="text" required maxlength="100" value={store!.name === "CartDE" && !done ? "" : store!.name} />
+					<div class="row">
+						<div><label for="currency">Currency (ISO code)</label><input id="currency" type="text" maxlength="3" size="4" value={store!.currency} /></div>
+						<div><label for="locale">Locale</label><input id="locale" type="text" value={store!.locale} /></div>
+						<div><label for="timezone">Time zone</label><input id="timezone" type="text" value={store!.timezone} /></div>
+					</div>
+					<div class="row">
+						<div><label for="contact_phone">Contact phone</label><input id="contact_phone" type="text" value={store!.contact_phone ?? ""} /></div>
+						<div><label for="contact_email">Contact email</label><input id="contact_email" type="email" value={store!.contact_email ?? ""} /></div>
+					</div>
+					<fieldset>
+						<legend>Delivery charge ({store!.currency})</legend>
+						<div class="row">
+							<div><label for="inside">Inside Dhaka</label><input id="inside" type="text" inputmode="decimal" value={f(store!.delivery_inside_dhaka_minor)} /></div>
+							<div><label for="outside">Outside Dhaka</label><input id="outside" type="text" inputmode="decimal" value={f(store!.delivery_outside_dhaka_minor)} /></div>
+							<div><label for="low">Low-stock threshold</label><input id="low" type="text" inputmode="numeric" value={String(store!.low_stock_threshold)} /></div>
+						</div>
+					</fieldset>
+					{!done && (
+						<label style="font-weight:400"><input type="checkbox" id="demo" /> Add a few demo products (saved as drafts, only when the catalogue is empty)</label>
+					)}
+					<p><button type="submit">{done ? "Save" : "Open my store"}</button></p>
+				</form>
+			</>
+		)
+	}
+</AdminLayout>
+
+<script>
+	import "../cartde/client/setup";
+</script>

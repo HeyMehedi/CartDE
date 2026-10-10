@@ -37,12 +37,12 @@ export async function updateStore(db: D1Database, input: z.infer<typeof storeSet
 		.prepare(
 			`UPDATE cartde_store SET name=?1, currency=?2, locale=?3, timezone=?4, contact_phone=?5, contact_email=?6,
 			 address_text=?7, delivery_inside_dhaka_minor=?8, delivery_outside_dhaka_minor=?9, low_stock_threshold=?10,
-			 updated_at=?11 WHERE id = 1`,
+			 updated_at=?11, status = CASE WHEN ?12 IS NOT NULL AND status != 'setup' THEN ?12 ELSE status END WHERE id = 1`,
 		)
 		.bind(
 			input.name, input.currency, input.locale, input.timezone, input.contact_phone ?? null,
 			input.contact_email ?? null, input.address_text ?? null, input.delivery_inside_dhaka_minor,
-			input.delivery_outside_dhaka_minor, input.low_stock_threshold, nowIso(),
+			input.delivery_outside_dhaka_minor, input.low_stock_threshold, nowIso(), input.status ?? null,
 		)
 		.run();
 	return getStore(db);

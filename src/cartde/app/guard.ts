@@ -25,7 +25,7 @@ export type GuardDecision =
 	| { action: "deny"; status: 401 | 403; code: "unauthenticated" | "forbidden" | "csrf"; message: string; json: boolean };
 
 export function isProtectedPath(pathname: string): boolean {
-	return pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/cartde/admin/");
+	return pathname === "/admin" || pathname.startsWith("/admin/") || pathname === "/setup" || pathname.startsWith("/api/cartde/admin/");
 }
 
 const isApi = (pathname: string) => pathname.startsWith("/api/");
@@ -65,4 +65,9 @@ export function decide(req: GuardRequest): GuardDecision {
 		}
 	}
 	return { action: "allow" };
+}
+
+/** Routes shoppers use; shown a "store not ready" page until setup completes (FR-DEP-5). */
+export function isStorefrontPath(pathname: string): boolean {
+	return pathname === "/" || pathname === "/cart" || pathname === "/checkout" || pathname.startsWith("/products") || pathname.startsWith("/orders/") || pathname === "/api/cartde/checkout" || pathname.startsWith("/api/cartde/cart/");
 }
