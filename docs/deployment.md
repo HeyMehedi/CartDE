@@ -1,6 +1,14 @@
 # Deployment
 
-Status: not yet deployed. The steps below are the plan for milestone 0.1 and have not been run against a Cloudflare account.
+Status: baseline deployed on 2026-10-10 to `https://cartde.heymehedi.workers.dev` (Cloudflare account "Mehedi").
+
+| Check | Result |
+| --- | --- |
+| `wrangler deploy` | Passed. Auto-provisioned KV `cartde-session`, D1 `cartde-db`, R2 `cartde-media`. Worker startup 26 ms. |
+| Secrets | `EMDASH_ENCRYPTION_KEY` and `EMDASH_SITE_URL` set with `wrangler secret put`. |
+| `/` and `/posts` | HTTP 200. The very first request took about 45 s (database initialisation); later requests about 1 s. |
+| `/_emdash/admin` | Redirects to `/_emdash/admin/setup`; setup wizard not yet completed. |
+| Not yet verified | Passkey setup, media upload, image rendering through the Images binding, CPU time per request. |
 
 ## Resources
 
