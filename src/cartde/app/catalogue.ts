@@ -4,7 +4,7 @@ import { listAudit } from "../db/audit";
 import { listCategories } from "../db/categories";
 import { resolveMediaUrls } from "../db/media";
 import { getActiveProductBySlug, getProduct, listProducts, type ProductDetail } from "../db/products";
-import { getCustomerOrders, getOrder, getOrderForShopper, listCustomers, listOrders, overview } from "../db/orders";
+import { getCustomerOrders, getOrder, getOrderForShopper, lowStockVariants, recentOrders, salesByDay, listCustomers, listOrders, overview } from "../db/orders";
 import { getStore } from "../db/store";
 import { startOfDayUtc } from "../domain/time";
 
@@ -56,9 +56,15 @@ export const adminOrders = (opts: Parameters<typeof listOrders>[1] = {}) => list
 export const adminOrder = (id: string) => getOrder(db(), id);
 export const adminCustomers = (q?: string) => listCustomers(db(), { q });
 export const adminCustomer = (id: string) => getCustomerOrders(db(), id);
-export async function adminOverview() {
+export async function adminOverview(days: 7 | 30 = 7) {
 	const store = await getStore(db());
-	return overview(db(), startOfDayUtc(store.timezone).toISOString());
+	const [counts, recent, sales, low] = await Promise.all([
+		overview(db(), startOfDayUtc(store.timezone).toISOString()),
+		recentOrders(db(), 10),
+		salesByDay(db(), days, store.timezone),
+		lowStockVariants(db(), store.low_stock_threshold, 20),
+	]);
+	return { counts, recent, sales, low };
 }
 
 export const adminAudit = (opts: Parameters<typeof listAudit>[1] = {}) => listAudit(db(), opts);

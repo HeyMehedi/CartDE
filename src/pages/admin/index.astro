@@ -1,7 +1,16 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { adminOverview, adminStore } from "../../cartde/app/catalogue";
-const [o, store] = await Promise.all([adminOverview(), adminStore()]);
+import { formatMoney } from "../../cartde/domain/money";
+
+const days = Astro.url.searchParams.get("days") === "30" ? 30 : 7;
+const [{ counts: o, recent, sales, low }, store] = await Promise.all([adminOverview(days), adminStore()]);
+const money = (n: number) => formatMoney(n, store.currency, store.locale);
+const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeStyle: "short", timeZone: store.timezone });
+const dayLabel = new Intl.DateTimeFormat(store.locale, { day: "numeric", month: "short", timeZone: "UTC" });
+const maxRevenue = Math.max(1, ...sales.map((d) => d.revenue_minor));
+const totalOrders = sales.reduce((n, d) => n + d.orders, 0);
+const totalRevenue = sales.reduce((n, d) => n + d.revenue_minor, 0);
 ---
 
 <AdminLayout title="Overview" active="overview">
@@ -10,7 +19,48 @@ const [o, store] = await Promise.all([adminOverview(), adminStore()]);
 		<a class="card" href="/admin/orders?status=pending"><strong>{o.pending_orders}</strong>Pending orders</a>
 		<a class="card" href="/admin/orders"><strong>{o.orders_today}</strong>Orders today</a>
 		<a class="card" href="/admin/products?status=active"><strong>{o.active_products}</strong>Active products</a>
-		<a class="card" href="/admin/products"><strong>{o.low_stock_variants}</strong>Low-stock variants</a>
+		<a class="card" href="#low-stock"><strong>{o.low_stock_variants}</strong>Low-stock variants</a>
 	</div>
-	<p class="muted">Counts use the store time zone ({store.timezone}) and low-stock threshold ({store.low_stock_threshold}).</p>
+
+	<h2>Recent orders</h2>
+	{
+		recent.length === 0 ? <p class="muted">No orders yet.</p> : (
+			<div class="scroll">
+				<table>
+					<thead><tr><th>Order</th><th>Placed</th><th>Customer</th><th>Status</th><th>Total</th></tr></thead>
+					<tbody>{recent.map((r) => <tr><td><a href={`/admin/orders/${r.id}`}>#{r.order_number}</a></td><td>{when.format(new Date(r.placed_at))}</td><td>{r.customer_name}</td><td>{r.status}</td><td>{money(r.total_minor)}</td></tr>)}</tbody>
+				</table>
+			</div>
+		)
+	}
+
+	<h2>Sales, last {days} days</h2>
+	<p><a href="/admin?days=7" aria-current={days === 7 ? "page" : undefined}>7 days</a> · <a href="/admin?days=30" aria-current={days === 30 ? "page" : undefined}>30 days</a> — {totalOrders} orders, {money(totalRevenue)} revenue (cancelled and returned orders excluded from revenue)</p>
+	<div class="scroll">
+		<table>
+			<thead><tr><th>Day</th><th>Orders</th><th>Revenue</th><th><span class="muted">Share of best day</span></th></tr></thead>
+			<tbody>
+				{sales.map((d) => (
+					<tr>
+						<td>{dayLabel.format(new Date(`${d.date}T00:00:00Z`))}</td>
+						<td>{d.orders}</td>
+						<td>{money(d.revenue_minor)}</td>
+						<td aria-hidden="true"><span style={`display:inline-block;height:.7rem;background:currentColor;opacity:.5;width:${Math.round((d.revenue_minor / maxRevenue) * 10)}rem`}></span></td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	</div>
+
+	<h2 id="low-stock">Low stock (at or below {store.low_stock_threshold})</h2>
+	{
+		low.length === 0 ? <p class="muted">Nothing is running low.</p> : (
+			<div class="scroll">
+				<table>
+					<thead><tr><th>Product</th><th>Variant</th><th>SKU</th><th>In stock</th></tr></thead>
+					<tbody>{low.map((l) => <tr><td><a href={`/admin/products/${l.product_id}`}>{l.product_name}</a></td><td>{l.variant_title}</td><td>{l.sku ?? "—"}</td><td>{l.stock_qty}</td></tr>)}</tbody>
+				</table>
+			</div>
+		)
+	}
 </AdminLayout>

@@ -76,7 +76,13 @@ const data = JSON.stringify({ id: order.id, status: order.status, merchant_note:
 
 	<h2>History</h2>
 	<ul>
-		{order.events.map((e) => <li>{when.format(new Date(e.created_at))} — {e.from_status ? `${e.from_status} → ` : ""}<strong>{e.to_status}</strong>{e.note && `: ${e.note}`}</li>)}
+		{order.events.map((e) => (
+			<li>
+				{when.format(new Date(e.created_at))} — {e.from_status ? `${e.from_status} → ` : ""}<strong>{e.to_status}</strong>
+				<span class="muted"> by {e.actor_user_id ? `administrator ${e.actor_user_id === Astro.locals.user?.id ? "(you)" : e.actor_user_id.slice(-6)}` : e.from_status ? "system" : "shopper (checkout)"}</span>
+				{e.note && `: ${e.note}`}
+			</li>
+		))}
 	</ul>
 </AdminLayout>
 

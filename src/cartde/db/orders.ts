@@ -369,3 +369,49 @@ export async function getOrderIdByNumber(db: D1Database, orderNumber: number): P
 	if (!row) throw new CartdeError("not_found", `Order #${orderNumber} not found.`);
 	return row.id;
 }
+
+// ---------- overview details (PR-ADM-2, PR-ADM-6, PR-CAT-9) ----------
+
+export async function recentOrders(db: D1Database, limit = 10): Promise<OrderListItem[]> {
+	const { results } = await db
+		.prepare(`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders ORDER BY order_number DESC LIMIT ?1`)
+		.bind(Math.min(limit, 50))
+		.all<OrderListItem>();
+	return results;
+}
+
+export interface DaySales { date: string; orders: number; revenue_minor: number }
+
+/** Orders and revenue per calendar day in the store's time zone, oldest first, including empty days. Revenue excludes cancelled and returned orders. */
+export async function salesByDay(db: D1Database, days: number, timeZone: string, now: Date = new Date()): Promise<DaySales[]> {
+	const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
+	const keys: string[] = [];
+	for (let i = days - 1; i >= 0; i--) keys.push(dayKey.format(new Date(now.getTime() - i * 86_400_000)));
+	const out = new Map(keys.map((k) => [k, { date: k, orders: 0, revenue_minor: 0 }]));
+	const since = new Date(now.getTime() - (days + 1) * 86_400_000).toISOString();
+	const { results } = await db
+		.prepare(`SELECT placed_at, status, total_minor FROM cartde_orders WHERE placed_at >= ?1 ORDER BY placed_at LIMIT 20000`)
+		.bind(since)
+		.all<{ placed_at: string; status: string; total_minor: number }>();
+	for (const r of results) {
+		const day = out.get(dayKey.format(new Date(r.placed_at)));
+		if (!day) continue;
+		day.orders += 1;
+		if (r.status !== "cancelled" && r.status !== "returned") day.revenue_minor += r.total_minor;
+	}
+	return [...out.values()];
+}
+
+export interface LowStockRow { product_id: string; product_name: string; variant_id: string; variant_title: string; sku: string | null; stock_qty: number }
+
+export async function lowStockVariants(db: D1Database, threshold: number, limit = 50): Promise<LowStockRow[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT p.id AS product_id, p.name AS product_name, v.id AS variant_id, v.title AS variant_title, v.sku, v.stock_qty
+			 FROM cartde_variants v JOIN cartde_products p ON p.id = v.product_id
+			 WHERE v.status = 'active' AND p.status = 'active' AND v.stock_qty <= ?1 ORDER BY v.stock_qty, p.name LIMIT ?2`,
+		)
+		.bind(threshold, limit)
+		.all<LowStockRow>();
+	return results;
+}
