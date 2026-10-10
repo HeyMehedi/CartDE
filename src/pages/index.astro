@@ -10,27 +10,31 @@ import { env } from "cloudflare:workers";
 import { resolveStarterSiteIdentity } from "../utils/site-identity";
 
 const { store, theme, t } = await storefrontContext();
-const { siteTitle, siteTagline } = resolveStarterSiteIdentity(await getSiteSettings());
 const sections = theme.sections.filter((s) => s.enabled);
-
 const wantsProducts = sections.some((s) => s.type === "latest_products");
 const productLimit = Math.max(0, ...sections.filter((s) => s.type === "latest_products").map((s) => s.count ?? 8));
-const products = wantsProducts ? (await storefrontProducts({ pageSize: productLimit })).items : [];
-const categories = sections.some((s) => s.type === "categories") ? await adminCategories() : [];
-const urls = await mediaUrls(products.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : [])));
-
 const wantsPosts = sections.some((s) => s.type === "recent_posts");
 const postLimit = Math.max(0, ...sections.filter((s) => s.type === "recent_posts").map((s) => s.count ?? 3));
-const postsResult = wantsPosts ? await getEmDashCollection("posts", { orderBy: { published_at: "desc" }, limit: postLimit }) : null;
+
+// Independent reads run in parallel: each one is a database round trip (SRS NFR-5).
+const [settings, productPage, categories, postsResult, runtime] = await Promise.all([
+	getSiteSettings(),
+	wantsProducts ? storefrontProducts({ pageSize: productLimit }) : null,
+	sections.some((s) => s.type === "categories") ? adminCategories() : [],
+	wantsPosts ? getEmDashCollection("posts", { orderBy: { published_at: "desc" }, limit: postLimit }) : null,
+	extensionRuntime(env.DB),
+]);
+const { siteTitle, siteTagline } = resolveStarterSiteIdentity(settings);
+const products = productPage?.items ?? [];
 if (postsResult && Astro.cache?.enabled) Astro.cache.set(postsResult.cacheHint);
 const posts = postsResult?.entries ?? [];
 
-const runtime = await extensionRuntime(env.DB);
-const extensionData = new Map<string, Awaited<ReturnType<typeof runtime.loadSection>>>();
-for (const s of sections) {
-	if (s.type === "extension" && s.extension_id)
-		extensionData.set(s.extension_id, await runtime.loadSection(s.extension_id, { currency: store.currency, locale: store.locale }));
-}
+const extensionIds = sections.flatMap((s) => (s.type === "extension" && s.extension_id ? [s.extension_id] : []));
+const [urls, sectionData] = await Promise.all([
+	mediaUrls(products.flatMap((p) => (p.featured_media_id ? [p.featured_media_id] : []))),
+	Promise.all(extensionIds.map((id) => runtime.loadSection(id, { currency: store.currency, locale: store.locale }))),
+]);
+const extensionData = new Map(extensionIds.map((id, i) => [id, sectionData[i] ?? null]));
 const money = (n: number) => formatMoney(n, store.currency, store.locale);
 ---
 

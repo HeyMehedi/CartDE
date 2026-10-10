@@ -24,8 +24,10 @@ test.beforeAll(async ({ browser }) => {
 
 test("0.4 first-run setup opens the store", async () => {
 	await signIn(admin, "/setup");
+	await admin.waitForLoadState("networkidle");
 	await expect(admin.getByRole("heading", { name: "Set up your store" })).toBeVisible();
 	await admin.fill("#name", "E2E Shop");
+	await expect(admin.locator("#name")).toHaveValue("E2E Shop");
 	await admin.fill("#contact_phone", "01711111111");
 	await admin.fill("#inside", "60");
 	await admin.fill("#outside", "120");

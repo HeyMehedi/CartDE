@@ -1,3 +1,4 @@
+import { chromium } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -27,4 +28,23 @@ export default async function globalSetup() {
 	const file = join(dir, "reset.sql");
 	writeFileSync(file, sql + ";\n");
 	execFileSync("pnpm", ["wrangler", "d1", "execute", "DB", "--local", "--file", file], { stdio: "ignore" });
+
+	// Warm the dev server in a real browser so Vite compiles pages and optimises client dependencies (which can
+	// reload an open page) before the tests start typing into forms.
+	const browser = await chromium.launch();
+	const page = await browser.newPage({ baseURL: "http://localhost:4321" });
+	for (const path of [
+		"/_emdash/api/setup/dev-bypass?redirect=/setup",
+		"/admin/products/new",
+		"/admin/theme",
+		"/admin/import",
+		"/",
+		"/cart",
+		"/checkout",
+	]) {
+		await page.goto(path).catch(() => undefined);
+		await page.waitForLoadState("networkidle").catch(() => undefined);
+	}
+	await page.waitForTimeout(3000);
+	await browser.close();
 }
