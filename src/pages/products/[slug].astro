@@ -126,7 +126,32 @@ const clientData = JSON.stringify({
 				{t("product.add")}
 			</button>
 			<noscript>
-				<p class="cd-muted">{t("product.needs_js")}</p>
+				{/* FR-SF-5: without JavaScript the cart is unavailable, so offer a direct single-item order instead. */}
+				{inStock && !preview && (
+					<form method="get" action="/checkout" class="cd-field">
+						{variants.length > 1 ? (
+							<>
+								<label for="nojs-v">{t("product.option")}</label>
+								<select id="nojs-v" name="v">
+									{variants
+										.filter((x) => x.stock_qty > 0)
+										.map((x) => (
+											<option value={x.id}>
+												{x.title} — {money(x.price_minor)}
+											</option>
+										))}
+								</select>
+							</>
+						) : (
+							<input type="hidden" name="v" value={first.id} />
+						)}
+						<label for="nojs-q">{t("cart.quantity")}</label>
+						<input id="nojs-q" name="q" type="number" min="1" max="20" value="1" style="width:5rem" />
+						<button type="submit" class="cd-btn">
+							{t("product.order_now")}
+						</button>
+					</form>
+				)}
 			</noscript>
 			<script type="application/json" id="i18n" set:html={i18n} />
 			<div set:html={renderMarkdown(product.description_md)} />

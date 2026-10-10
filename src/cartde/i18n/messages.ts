@@ -98,6 +98,9 @@ export const en = {
 	"notfound.body": "The page you are looking for does not exist or is no longer available.",
 	"notfound.shop": "Browse products",
 	"notfound.home": "Go home",
+	"product.order_now": "Order now",
+	"error.title": "Something went wrong",
+	"error.body": "Please try again in a moment.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -198,6 +201,9 @@ export const bn: Record<MessageKey, string> = {
 	"notfound.body": "আপনি যে পাতাটি খুঁজছেন সেটি নেই বা আর পাওয়া যাচ্ছে না।",
 	"notfound.shop": "পণ্য দেখুন",
 	"notfound.home": "হোমে যান",
+	"product.order_now": "এখনই অর্ডার করুন",
+	"error.title": "কিছু একটা ভুল হয়েছে",
+	"error.body": "একটু পরে আবার চেষ্টা করুন।",
 };
 
 export type Lang = "en" | "bn";

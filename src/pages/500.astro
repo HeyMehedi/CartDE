@@ -1,0 +1,17 @@
+---
+import Base from "../layouts/Base.astro";
+import { storefrontContext } from "../cartde/app/storefront";
+// FR-SF-6: branded error page; Astro passes the error object, which is never shown to visitors.
+const { t } = await storefrontContext();
+Astro.response.headers.set("Cache-Control", "no-store");
+---
+
+<Base title={t("error.title")}>
+	<h1>{t("error.title")}</h1>
+	<p>{t("error.body")}</p>
+	<p>
+		<a class="cd-btn" href="/">
+			{t("notfound.home")}
+		</a>
+	</p>
+</Base>

@@ -42,6 +42,12 @@ function sameOrigin(req: GuardRequest): boolean {
 export const isPublicWritePath = (pathname: string): boolean => pathname === "/api/cartde/checkout";
 
 export function decide(req: GuardRequest): GuardDecision {
+	// FR-SF-5 no-JavaScript checkout posts a normal form: no custom header is possible, so require same origin.
+	if (req.pathname === "/checkout" && !isSafeMethod(req.method)) {
+		return sameOrigin(req)
+			? { action: "allow" }
+			: { action: "deny", status: 403, code: "csrf", message: "Cross-site request refused.", json: false };
+	}
 	if (isPublicWritePath(req.pathname)) {
 		if (!isSafeMethod(req.method) && (!sameOrigin(req) || req.header(CSRF_HEADER) !== "1")) {
 			return { action: "deny", status: 403, code: "csrf", message: "Cross-site request refused.", json: true };

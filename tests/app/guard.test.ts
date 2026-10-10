@@ -64,4 +64,13 @@ describe("guard", () => {
 		expect(decide(req({ ...co, headers: { "sec-fetch-site": "same-origin" } }))).toMatchObject({ code: "csrf" });
 		expect(decide(req({ ...co, method: "GET" }))).toEqual({ action: "allow" });
 	});
+
+	it("accepts a same-origin no-JavaScript checkout form post and refuses cross-site ones", () => {
+		const co = { pathname: "/checkout", user: null, method: "POST" } as const;
+		expect(decide(req({ ...co, headers: { "sec-fetch-site": "same-origin" } }))).toEqual({ action: "allow" });
+		expect(decide(req({ ...co, headers: { origin: "https://shop.test" } }))).toEqual({ action: "allow" });
+		expect(decide(req({ ...co, headers: { "sec-fetch-site": "cross-site" } }))).toMatchObject({ code: "csrf", json: false });
+		expect(decide(req({ ...co, headers: {} }))).toMatchObject({ code: "csrf" });
+		expect(decide(req({ ...co, method: "GET" }))).toEqual({ action: "allow" });
+	});
 });

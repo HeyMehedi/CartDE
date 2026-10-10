@@ -1,14 +1,67 @@
 ---
 import Base from "../layouts/Base.astro";
+import { env } from "cloudflare:workers";
+import { extensionRuntime } from "../cartde/app/extensions";
 import { storefrontContext } from "../cartde/app/storefront";
-import { DISTRICTS } from "../cartde/domain/geo/districts";
+import { getStore } from "../cartde/db/store";
+import { placeOrder, priceCart, quoteTotals } from "../cartde/db/orders";
+import { CartdeError, newId } from "../cartde/db/util";
+import { DISTRICTS, isDistrict } from "../cartde/domain/geo/districts";
 import { formatMoney } from "../cartde/domain/money";
+import { checkoutInput } from "../cartde/domain/schemas";
 import { clientMessages } from "../cartde/i18n/messages";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 Astro.response.headers.set("X-Robots-Tag", "noindex");
 const { store, t, lang } = await storefrontContext();
 const fee = (n: number) => formatMoney(n, store.currency, store.locale);
 const ready = store.status !== "paused";
+
+// FR-SF-5: without JavaScript, the product page's "Order now" form sends ?v=<variant>&q=<qty>, and this page posts
+// back to itself as an ordinary form. With JavaScript, the cart flow in checkout-page.ts handles the same form.
+const isPost = Astro.request.method === "POST";
+const form = isPost ? await Astro.request.formData() : null;
+const field = (name: string) => (form?.get(name)?.toString() ?? "").trim();
+const v = isPost ? field("v") : (Astro.url.searchParams.get("v") ?? "");
+const q = Math.min(20, Math.max(1, Math.floor(Number(isPost ? field("q") : Astro.url.searchParams.get("q")) || 1)));
+const single = /^[0-9A-Z]{26}$/.test(v);
+
+let formError: string | null = null;
+let fieldErrors: Record<string, string> = {};
+if (isPost && single && ready) {
+	const parsed = checkoutInput.safeParse({
+		idempotency_key: field("idempotency_key"),
+		name: field("name"),
+		phone: field("phone"),
+		email: field("email") || null,
+		district: field("district"),
+		area: field("area"),
+		address: field("address"),
+		note: field("note") || null,
+		lines: [{ variant_id: v, quantity: q }],
+	});
+	if (parsed.success) {
+		try {
+			const placed = await placeOrder(env.DB, parsed.data, { extensions: await extensionRuntime(env.DB) });
+			return Astro.redirect(`/orders/${placed.order_number}?t=${encodeURIComponent(placed.access_token)}`, 303);
+		} catch (err) {
+			if (!(err instanceof CartdeError)) throw err;
+			formError = err.message;
+		}
+	} else {
+		for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0] ?? "_")] ??= issue.message;
+		formError = t("checkout.failed");
+	}
+}
+
+// Server-rendered summary for the single-item (no-JavaScript) path.
+const singleLines = single ? await priceCart(env.DB, [{ variant_id: v, quantity: q }]) : [];
+const chosenDistrict = field("district");
+const singleTotals =
+	single && singleLines.every((l) => l.available) && isDistrict(chosenDistrict)
+		? await quoteTotals(await getStore(env.DB), singleLines, chosenDistrict, await extensionRuntime(env.DB))
+		: null;
+const idempotencyKey = (isPost && field("idempotency_key")) || newId();
+const value = (name: string) => (isPost ? field(name) : "");
 const i18n = JSON.stringify(
 	clientMessages(lang, ["checkout.review_cart", "checkout.network_error", "checkout.failed", "checkout.choose_district"]),
 ).replace(/</g, "\\u003c");
@@ -23,71 +76,119 @@ const i18n = JSON.stringify(
 		<a href="/products">{t("cart.browse")}</a>
 	</div>
 	<div class="cd-split wide-left" id="checkout" hidden={!ready}>
-		<form id="checkout-form" novalidate>
-			<div id="form-error" class="cd-alert" role="alert" hidden></div>
+		<form id="checkout-form" method="post" action="/checkout" data-mode={single ? "single" : "cart"} novalidate={!single}>
+			<div id="form-error" class="cd-alert" role="alert" hidden={!formError}>
+				{formError}
+			</div>
+			<input type="hidden" name="idempotency_key" value={idempotencyKey} />
+			{single && <input type="hidden" name="v" value={v} />}
+			{single && <input type="hidden" name="q" value={String(q)} />}
 			<div class="cd-field">
 				<label for="name">{t("checkout.name")}</label>
-				<input id="name" name="name" autocomplete="name" required minlength="2" maxlength="100" />
-				<div class="cd-error" data-err="name"></div>
+				<input id="name" name="name" autocomplete="name" required minlength="2" maxlength="100" value={value("name")} />
+				<div class="cd-error" data-err="name">
+					{fieldErrors.name}
+				</div>
 			</div>
 			<div class="cd-field">
 				<label for="phone">{t("checkout.phone")}</label>
-				<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="01XXXXXXXXX" />
-				<div class="cd-error" data-err="phone"></div>
+				<input
+					id="phone"
+					name="phone"
+					type="tel"
+					inputmode="tel"
+					autocomplete="tel"
+					required
+					placeholder="01XXXXXXXXX"
+					value={value("phone")}
+				/>
+				<div class="cd-error" data-err="phone">
+					{fieldErrors.phone}
+				</div>
 			</div>
 			<div class="cd-field">
 				<label for="email">{t("checkout.email")}</label>
-				<input id="email" name="email" type="email" autocomplete="email" maxlength="120" />
-				<div class="cd-error" data-err="email"></div>
+				<input id="email" name="email" type="email" autocomplete="email" maxlength="120" value={value("email")} />
+				<div class="cd-error" data-err="email">
+					{fieldErrors.email}
+				</div>
 			</div>
 			<div class="cd-field">
 				<label for="district">{t("checkout.district")}</label>
 				<select id="district" name="district" required>
 					<option value="">{t("checkout.choose")}</option>
 					{DISTRICTS.map((d) => (
-						<option value={d}>{d}</option>
+						<option value={d} selected={chosenDistrict === d}>
+							{d}
+						</option>
 					))}
 				</select>
-				<div class="cd-error" data-err="district"></div>
+				<div class="cd-error" data-err="district">
+					{fieldErrors.district}
+				</div>
 			</div>
 			<div class="cd-field">
 				<label for="area">{t("checkout.area")}</label>
-				<input id="area" name="area" required maxlength="100" />
-				<div class="cd-error" data-err="area"></div>
+				<input id="area" name="area" required maxlength="100" value={value("area")} />
+				<div class="cd-error" data-err="area">
+					{fieldErrors.area}
+				</div>
 			</div>
 			<div class="cd-field">
 				<label for="address">{t("checkout.address")}</label>
-				<textarea id="address" name="address" rows="3" required minlength="5" maxlength="200" autocomplete="street-address"></textarea>
-				<div class="cd-error" data-err="address"></div>
+				<textarea
+					id="address"
+					name="address"
+					rows="3"
+					required
+					minlength="5"
+					maxlength="200"
+					autocomplete="street-address"
+				>{value("address")}</textarea>
+				<div class="cd-error" data-err="address">
+					{fieldErrors.address}
+				</div>
 			</div>
 			<div class="cd-field">
 				<label for="note">{t("checkout.note")}</label>
-				<textarea id="note" name="note" rows="2" maxlength="500"></textarea>
+				<textarea id="note" name="note" rows="2" maxlength="500">{value("note")}</textarea>
 			</div>
 			<p class="cd-muted">
 				{t("checkout.payment", { inside: fee(store.delivery_inside_dhaka_minor), outside: fee(store.delivery_outside_dhaka_minor) })}
 			</p>
-			<button class="cd-btn" id="place" type="submit">
+			<button class="cd-btn" id="place" type="submit" disabled={single && !singleLines.every((l) => l.available)}>
 				{t("checkout.place")}
 			</button>
 		</form>
 		<aside aria-labelledby="sum-h">
 			<h2 id="sum-h">{t("checkout.summary")}</h2>
 			<table class="cd-table">
-				<tbody id="summary"></tbody>
+				<tbody id="summary">
+					{singleLines.map((l) => (
+						<tr>
+							<td>
+								{l.quantity} × {l.product_name}
+								{l.variant_title !== "Default" && ` (${l.variant_title})`}
+								{l.problem && <div class="cd-error">{l.problem}</div>}
+							</td>
+							<td>{l.available ? fee(l.line_total_minor) : "—"}</td>
+						</tr>
+					))}
+				</tbody>
 			</table>
 			<p>
-				{t("checkout.subtotal")}: <span id="sub"></span>
+				{t("checkout.subtotal")}:{" "}
+				<span id="sub">{single && fee(singleLines.reduce((s, l) => s + (l.available ? l.line_total_minor : 0), 0))}</span>
 			</p>
 			<p>
-				{t("checkout.delivery")}: <span id="del">{t("checkout.choose_district")}</span>
+				{t("checkout.delivery")}: <span id="del">{singleTotals ? fee(singleTotals.delivery_minor) : t("checkout.choose_district")}</span>
 			</p>
-			<p id="disc-row" hidden>
-				{t("checkout.discount")}: <span id="disc"></span>
+			<p id="disc-row" hidden={!singleTotals?.discount_minor}>
+				{t("checkout.discount")}: <span id="disc">{singleTotals?.discount_minor ? `−${fee(singleTotals.discount_minor)}` : ""}</span>
 			</p>
 			<p>
 				<strong>
-					{t("checkout.total")}: <span id="tot"></span>
+					{t("checkout.total")}: <span id="tot">{singleTotals && fee(singleTotals.total_minor)}</span>
 				</strong>
 			</p>
 		</aside>

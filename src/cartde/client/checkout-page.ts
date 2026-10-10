@@ -5,6 +5,7 @@ import { t } from "./i18n";
 
 const KEY_STORE = "cartde.checkout.key";
 const form = document.getElementById("checkout-form");
+const cartMode = form?.dataset.mode !== "single";
 const errBox = document.getElementById("form-error");
 let data = null;
 
@@ -77,50 +78,52 @@ function showFieldErrors(fields = {}) {
 	document.querySelectorAll("[data-err]").forEach((el) => (el.textContent = fields[el.dataset.err] ?? ""));
 }
 
-form.district.addEventListener("change", loadSummary);
-form.addEventListener("submit", async (e) => {
-	e.preventDefault();
-	errBox.hidden = true;
-	showFieldErrors();
-	const btn = document.getElementById("place");
-	btn.disabled = true;
-	const v = (n) => form[n].value.trim();
-	try {
-		const res = await fetch("/api/cartde/checkout", {
-			method: "POST",
-			headers: { "content-type": "application/json", "x-cartde-request": "1" },
-			body: JSON.stringify({
-				idempotency_key: key,
-				name: v("name"),
-				phone: v("phone"),
-				email: v("email") || null,
-				district: v("district"),
-				area: v("area"),
-				address: v("address"),
-				note: v("note") || null,
-				lines: getCart().map((l) => ({ variant_id: l.variantId, quantity: l.quantity })),
-			}),
-		});
-		const json = await res.json().catch(() => null);
-		if (!json?.ok) {
-			showFieldErrors(json?.error?.fields);
-			errBox.hidden = false;
-			errBox.textContent = json?.error?.message ?? t("checkout.failed");
-			if (res.status === 409) await loadSummary();
-			btn.disabled = false;
-			return;
-		}
+if (cartMode) {
+	form.district.addEventListener("change", loadSummary);
+	form.addEventListener("submit", async (e) => {
+		e.preventDefault();
+		errBox.hidden = true;
+		showFieldErrors();
+		const btn = document.getElementById("place");
+		btn.disabled = true;
+		const v = (n) => form[n].value.trim();
 		try {
-			sessionStorage.removeItem(KEY_STORE);
+			const res = await fetch("/api/cartde/checkout", {
+				method: "POST",
+				headers: { "content-type": "application/json", "x-cartde-request": "1" },
+				body: JSON.stringify({
+					idempotency_key: key,
+					name: v("name"),
+					phone: v("phone"),
+					email: v("email") || null,
+					district: v("district"),
+					area: v("area"),
+					address: v("address"),
+					note: v("note") || null,
+					lines: getCart().map((l) => ({ variant_id: l.variantId, quantity: l.quantity })),
+				}),
+			});
+			const json = await res.json().catch(() => null);
+			if (!json?.ok) {
+				showFieldErrors(json?.error?.fields);
+				errBox.hidden = false;
+				errBox.textContent = json?.error?.message ?? t("checkout.failed");
+				if (res.status === 409) await loadSummary();
+				btn.disabled = false;
+				return;
+			}
+			try {
+				sessionStorage.removeItem(KEY_STORE);
+			} catch {
+				/* storage blocked: nothing to clear */
+			}
+			clearCart();
+			location.href = `/orders/${json.data.order_number}?t=${encodeURIComponent(json.data.access_token)}`;
 		} catch {
-			/* storage blocked: nothing to clear */
+			errBox.hidden = false;
+			errBox.textContent = t("checkout.network_error");
+			btn.disabled = false;
 		}
-		clearCart();
-		location.href = `/orders/${json.data.order_number}?t=${encodeURIComponent(json.data.access_token)}`;
-	} catch {
-		errBox.hidden = false;
-		errBox.textContent = t("checkout.network_error");
-		btn.disabled = false;
-	}
-});
-loadSummary();
+	});
+	loadSummary();
+}
