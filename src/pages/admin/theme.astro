@@ -6,44 +6,98 @@ import { getTheme } from "../../cartde/db/theme";
 import { PRESETS, PRESET_IDS, SECTION_TYPES } from "../../cartde/domain/theme";
 const theme = await getTheme(env.DB);
 const exts = registry().available.map((e) => ({ id: e.id, name: e.name, section: !!e.hooks.storefrontSection }));
-const data = JSON.stringify({ theme, extensions: exts, presets: Object.fromEntries(PRESET_IDS.map((id) => [id, PRESETS[id]])), sectionTypes: SECTION_TYPES }).replace(/</g, "\\u003c");
+const data = JSON.stringify({
+	theme,
+	extensions: exts,
+	presets: Object.fromEntries(PRESET_IDS.map((id) => [id, PRESETS[id]])),
+	sectionTypes: SECTION_TYPES,
+}).replace(/</g, "\\u003c");
 ---
 
 <AdminLayout title="Theme" active="theme">
 	<h1>Storefront theme</h1>
-	<p class="muted">Colours are checked for readable contrast (WCAG AA). Leave a colour empty to use the preset's value. <a href="/" target="_blank" rel="noopener">View storefront</a></p>
+	<p class="muted">
+		Colours are checked for readable contrast (WCAG AA). Leave a colour empty to use the preset's value.{" "}
+		<a href="/" target="_blank" rel="noopener">
+			View storefront
+		</a>
+	</p>
 	<div id="msg" role="alert" hidden class="error"></div>
 	<script type="application/json" id="theme-data" set:html={data} />
 	<form id="theme-form">
 		<div class="row">
-			<div><label for="preset">Preset</label><select id="preset">{PRESET_IDS.map((id) => <option value={id} selected={theme.preset === id}>{PRESETS[id].label}</option>)}</select></div>
-			<div><label for="font">Font</label><select id="font"><option value="">Preset default</option><option value="system">System</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></div>
-			<div><label for="radius">Corners</label><select id="radius"><option value="">Preset default</option><option value="sharp">Sharp</option><option value="soft">Soft</option><option value="round">Round</option></select></div>
+			<div>
+				<label for="preset">Preset</label>
+				<select id="preset">
+					{PRESET_IDS.map((id) => (
+						<option value={id} selected={theme.preset === id}>
+							{PRESETS[id].label}
+						</option>
+					))}
+				</select>
+			</div>
+			<div>
+				<label for="font">Font</label>
+				<select id="font">
+					<option value="">Preset default</option>
+					<option value="system">System</option>
+					<option value="serif">Serif</option>
+					<option value="mono">Monospace</option>
+				</select>
+			</div>
+			<div>
+				<label for="radius">Corners</label>
+				<select id="radius">
+					<option value="">Preset default</option>
+					<option value="sharp">Sharp</option>
+					<option value="soft">Soft</option>
+					<option value="round">Round</option>
+				</select>
+			</div>
 		</div>
 		<fieldset>
 			<legend>Colours (hex, e.g. #0b6b4f)</legend>
 			<div class="row">
-				<div><label for="c-accent">Accent / buttons</label><input id="c-accent" type="text" maxlength="7" size="9" placeholder="preset" /></div>
-				<div><label for="c-accent_fg">Button text</label><input id="c-accent_fg" type="text" maxlength="7" size="9" placeholder="preset" /></div>
-				<div><label for="c-bg">Page background</label><input id="c-bg" type="text" maxlength="7" size="9" placeholder="preset" /></div>
-				<div><label for="c-fg">Page text</label><input id="c-fg" type="text" maxlength="7" size="9" placeholder="preset" /></div>
+				<div>
+					<label for="c-accent">Accent / buttons</label>
+					<input id="c-accent" type="text" maxlength="7" size="9" placeholder="preset" />
+				</div>
+				<div>
+					<label for="c-accent_fg">Button text</label>
+					<input id="c-accent_fg" type="text" maxlength="7" size="9" placeholder="preset" />
+				</div>
+				<div>
+					<label for="c-bg">Page background</label>
+					<input id="c-bg" type="text" maxlength="7" size="9" placeholder="preset" />
+				</div>
+				<div>
+					<label for="c-fg">Page text</label>
+					<input id="c-fg" type="text" maxlength="7" size="9" placeholder="preset" />
+				</div>
 			</div>
 		</fieldset>
 		<fieldset>
 			<legend>Homepage sections</legend>
 			<div id="sections"></div>
-			<button type="button" id="section-add">Add section</button>
+			<button type="button" id="section-add">
+				Add section
+			</button>
 		</fieldset>
 		<fieldset>
 			<legend>Footer</legend>
-			<label for="footer-text">Text</label><input id="footer-text" type="text" maxlength="300" />
+			<label for="footer-text">Text</label>
+			<input id="footer-text" type="text" maxlength="300" />
 			<div id="footer-links"></div>
-			<button type="button" id="link-add">Add link</button>
+			<button type="button" id="link-add">
+				Add link
+			</button>
 		</fieldset>
 		<fieldset>
 			<legend>Search engines</legend>
-			<label for="seo-suffix">Title suffix (added to every page title)</label><input id="seo-suffix" type="text" maxlength="40" />
-			<label for="seo-desc">Default description</label><input id="seo-desc" type="text" maxlength="160" />
+			<label for="seo-suffix">Title suffix (added to every page title)</label>
+			<input id="seo-suffix" type="text" maxlength="40" />
+			<label for="seo-desc">Default description</label>
+			<input id="seo-desc" type="text" maxlength="160" />
 		</fieldset>
 		<button type="submit">Save theme</button>
 	</form>

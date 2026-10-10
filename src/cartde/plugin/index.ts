@@ -35,9 +35,17 @@ const routes = Object.fromEntries(
 			handler: async (ctx: { input: unknown; user?: { id: string } }) => {
 				try {
 					const db = await database();
-					return { ok: true, data: await executeTool(name as ToolName, { db, actorUserId: ctx.user?.id ?? null, extensions: await extensionRuntime(db) }, ctx.input) };
+					return {
+						ok: true,
+						data: await executeTool(
+							name as ToolName,
+							{ db, actorUserId: ctx.user?.id ?? null, extensions: await extensionRuntime(db) },
+							ctx.input,
+						),
+					};
 				} catch (err) {
-					if (err instanceof ToolInputError) return { ok: false, error: { code: "invalid_input", message: err.message, fields: err.fields } };
+					if (err instanceof ToolInputError)
+						return { ok: false, error: { code: "invalid_input", message: err.message, fields: err.fields } };
 					if (err instanceof CartdeError) return { ok: false, error: { code: err.code, message: err.message, fields: err.fields } };
 					console.error("cartde tool error", name, err instanceof Error ? err.message : err);
 					return { ok: false, error: { code: "internal", message: "Something went wrong." } };
@@ -55,7 +63,12 @@ const adminRoute = {
 		try {
 			const db = await database();
 			const store = await getStore(db);
-			return buildAdminBlocks({ origin, storeName: store.name, setupComplete: !!store.setup_completed_at, overview: await overview(db, startOfDayUtc(store.timezone).toISOString()) });
+			return buildAdminBlocks({
+				origin,
+				storeName: store.name,
+				setupComplete: !!store.setup_completed_at,
+				overview: await overview(db, startOfDayUtc(store.timezone).toISOString()),
+			});
 		} catch {
 			return buildAdminBlocks({ origin, storeName: "CartDE", setupComplete: null, overview: null });
 		}
@@ -63,7 +76,10 @@ const adminRoute = {
 };
 
 const mcpTools = Object.fromEntries(
-	TOOL_NAMES.map((name) => [name, { description: TOOLS[name].description, route: name, input: TOOLS[name].input, destructive: TOOLS[name].destructive }]),
+	TOOL_NAMES.map((name) => [
+		name,
+		{ description: TOOLS[name].description, route: name, input: TOOLS[name].input, destructive: TOOLS[name].destructive },
+	]),
 );
 
 export function createPlugin() {
@@ -73,7 +89,8 @@ export function createPlugin() {
 		// Needed only to veto publishing a page whose slug collides with a store route (SRS 3.2).
 		capabilities: ["hooks.content-policy:register"],
 		hooks: {
-			"content:beforePublish": async (event: { collection: string; content: { slug?: unknown } }) => pageSlugDecision(event.collection, event.content.slug),
+			"content:beforePublish": async (event: { collection: string; content: { slug?: unknown } }) =>
+				pageSlugDecision(event.collection, event.content.slug),
 		} as never,
 		// The route/tool maps are built from the registry above; their value types are checked by EmDash at startup.
 		routes: { ...routes, admin: adminRoute } as never,

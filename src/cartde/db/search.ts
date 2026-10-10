@@ -1,4 +1,10 @@
-export interface SearchHit { id: string; name: string; slug: string; featured_media_id: string | null; price_minor: number }
+export interface SearchHit {
+	id: string;
+	name: string;
+	slug: string;
+	featured_media_id: string | null;
+	price_minor: number;
+}
 
 export const SEARCH_PAGE_SIZE = 24;
 const MAX_TERMS = 4;
@@ -12,7 +18,12 @@ export function searchTerms(query: string): string[] {
 }
 
 /** Storefront product search over active products. Names that start with the phrase rank first. */
-export async function searchStorefrontProducts(db: D1Database, query: string, page = 1, pageSize = SEARCH_PAGE_SIZE): Promise<{ items: SearchHit[]; total: number; page: number; pageSize: number }> {
+export async function searchStorefrontProducts(
+	db: D1Database,
+	query: string,
+	page = 1,
+	pageSize = SEARCH_PAGE_SIZE,
+): Promise<{ items: SearchHit[]; total: number; page: number; pageSize: number }> {
 	const terms = searchTerms(query);
 	const safePage = Math.max(1, Math.floor(page));
 	if (terms.length === 0) return { items: [], total: 0, page: safePage, pageSize };
@@ -38,5 +49,10 @@ export async function searchStorefrontProducts(db: D1Database, query: string, pa
 			.bind(...params, pageSize, (safePage - 1) * pageSize),
 		db.prepare(`SELECT COUNT(DISTINCT p.id) AS n ${base}`).bind(...params),
 	]);
-	return { items: (list.results as (SearchHit & { rank: number })[]).map(({ rank: _rank, ...hit }) => hit), total: (count.results[0] as { n: number }).n, page: safePage, pageSize };
+	return {
+		items: (list.results as (SearchHit & { rank: number })[]).map(({ rank: _rank, ...hit }) => hit),
+		total: (count.results[0] as { n: number }).n,
+		page: safePage,
+		pageSize,
+	};
 }

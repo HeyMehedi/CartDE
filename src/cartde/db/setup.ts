@@ -17,12 +17,19 @@ export async function storeIsReady(db: D1Database): Promise<{ ready: boolean; re
 }
 
 async function catalogueIsEmpty(db: D1Database): Promise<boolean> {
-	const row = await db.prepare(`SELECT (SELECT COUNT(*) FROM cartde_products) AS p, (SELECT COUNT(*) FROM cartde_categories) AS c`).first<{ p: number; c: number }>();
+	const row = await db
+		.prepare(`SELECT (SELECT COUNT(*) FROM cartde_products) AS p, (SELECT COUNT(*) FROM cartde_categories) AS c`)
+		.first<{ p: number; c: number }>();
 	return !row || (row.p === 0 && row.c === 0);
 }
 
 const DEMO = [
-	{ name: "Handloom Cotton Tee", price: 89000, sizes: ["S", "M", "L"], description: "A soft **handloom cotton** t-shirt.\n\n- Breathable\n- Machine washable" },
+	{
+		name: "Handloom Cotton Tee",
+		price: 89000,
+		sizes: ["S", "M", "L"],
+		description: "A soft **handloom cotton** t-shirt.\n\n- Breathable\n- Machine washable",
+	},
 	{ name: "Ceramic Mug", price: 45000, sizes: [] as string[], description: "A 350 ml ceramic mug." },
 ];
 
@@ -39,7 +46,9 @@ export async function seedDemoCatalogue(db: D1Database): Promise<number> {
 				status: "draft",
 				category_ids: [category.id],
 				options: d.sizes.length ? [{ name: "Size", values: d.sizes }] : [],
-				variants: d.sizes.length ? d.sizes.map((s) => ({ option_values: [s], price_minor: d.price, stock_qty: 10 })) : [{ price_minor: d.price, stock_qty: 10 }],
+				variants: d.sizes.length
+					? d.sizes.map((s) => ({ option_values: [s], price_minor: d.price, stock_qty: 10 }))
+					: [{ price_minor: d.price, stock_qty: 10 }],
 			}),
 		);
 	}
@@ -53,7 +62,9 @@ export async function completeSetup(db: D1Database, input: z.infer<typeof setupI
 	if (with_demo_products) demoProducts = await seedDemoCatalogue(db);
 	await updateStore(db, settings);
 	await db
-		.prepare(`UPDATE cartde_store SET status = CASE WHEN status = 'setup' THEN 'active' ELSE status END, setup_completed_at = COALESCE(setup_completed_at, ?1), updated_at = ?1 WHERE id = 1`)
+		.prepare(
+			`UPDATE cartde_store SET status = CASE WHEN status = 'setup' THEN 'active' ELSE status END, setup_completed_at = COALESCE(setup_completed_at, ?1), updated_at = ?1 WHERE id = 1`,
+		)
 		.bind(nowIso())
 		.run();
 	return { store: await getStore(db), demoProducts };

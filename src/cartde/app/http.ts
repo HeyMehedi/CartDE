@@ -23,12 +23,20 @@ export function route(handler: (ctx: Ctx) => Promise<Response>) {
 		const { method, url } = ctx.request;
 		// FR-ADM-7: every successful admin mutation is written to the audit log, here, so no endpoint can forget.
 		const audited = method !== "GET" && method !== "HEAD" && url.includes("/api/cartde/admin/");
-		const bodyText = audited ? await ctx.request.clone().text().catch(() => "") : "";
+		const bodyText = audited
+			? await ctx.request
+					.clone()
+					.text()
+					.catch(() => "")
+			: "";
 		try {
 			const response = await handler(ctx);
 			if (audited && response.status < 400) {
 				try {
-					await recordAudit(db(), auditEntryForRequest({ method, routePattern: ctx.routePattern, params: ctx.params, userId: actorId(ctx), bodyText }));
+					await recordAudit(
+						db(),
+						auditEntryForRequest({ method, routePattern: ctx.routePattern, params: ctx.params, userId: actorId(ctx), bodyText }),
+					);
 				} catch (auditErr) {
 					console.error("cartde audit write failed", auditErr instanceof Error ? auditErr.message : auditErr);
 				}

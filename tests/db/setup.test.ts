@@ -13,14 +13,27 @@ beforeEach(() => {
 });
 
 const input = (over: Record<string, unknown> = {}) =>
-	setupInput.parse({ name: "My Shop", currency: "BDT", locale: "en-BD", timezone: "Asia/Dhaka", delivery_inside_dhaka_minor: 6000, delivery_outside_dhaka_minor: 12000, low_stock_threshold: 3, ...over });
+	setupInput.parse({
+		name: "My Shop",
+		currency: "BDT",
+		locale: "en-BD",
+		timezone: "Asia/Dhaka",
+		delivery_inside_dhaka_minor: 6000,
+		delivery_outside_dhaka_minor: 12000,
+		low_stock_threshold: 3,
+		...over,
+	});
 
 describe("store readiness", () => {
 	it("is not ready until setup completes, and reports missing migrations", async () => {
 		expect(await storeIsReady(db)).toEqual({ ready: false, reason: "setup" });
 		await completeSetup(db, input());
 		expect(await storeIsReady(db)).toEqual({ ready: true });
-		const broken = { prepare: () => { throw new Error("no such table: cartde_store"); } } as unknown as D1Database;
+		const broken = {
+			prepare: () => {
+				throw new Error("no such table: cartde_store");
+			},
+		} as unknown as D1Database;
 		expect(await storeIsReady(broken)).toEqual({ ready: false, reason: "migrations" });
 	});
 });
@@ -76,7 +89,19 @@ describe("store status", () => {
 
 describe("storefront path classification", () => {
 	it("covers shopper routes but not admin, EmDash or content pages", () => {
-		for (const p of ["/", "/products", "/products/x", "/cart", "/checkout", "/orders/1001", "/search", "/api/cartde/checkout", "/api/cartde/cart/validate"]) expect(isStorefrontPath(p), p).toBe(true);
-		for (const p of ["/admin", "/setup", "/_emdash/admin", "/about", "/posts/hello", "/api/cartde/admin/products"]) expect(isStorefrontPath(p), p).toBe(false);
+		for (const p of [
+			"/",
+			"/products",
+			"/products/x",
+			"/cart",
+			"/checkout",
+			"/orders/1001",
+			"/search",
+			"/api/cartde/checkout",
+			"/api/cartde/cart/validate",
+		])
+			expect(isStorefrontPath(p), p).toBe(true);
+		for (const p of ["/admin", "/setup", "/_emdash/admin", "/about", "/posts/hello", "/api/cartde/admin/products"])
+			expect(isStorefrontPath(p), p).toBe(false);
 	});
 });

@@ -2,8 +2,19 @@ export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** Reserved first path segments owned by CartDE or EmDash; a slug may not shadow them. */
 export const RESERVED_SLUGS = new Set([
-	"admin", "api", "cart", "checkout", "orders", "products", "category", "tag", "posts",
-	"setup", "search", "_emdash", "_astro",
+	"admin",
+	"api",
+	"cart",
+	"checkout",
+	"orders",
+	"products",
+	"category",
+	"tag",
+	"posts",
+	"setup",
+	"search",
+	"_emdash",
+	"_astro",
 ]);
 
 export function slugify(input: string): string {

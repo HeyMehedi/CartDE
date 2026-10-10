@@ -4,12 +4,14 @@ import { productInput } from "../../../../../cartde/domain/schemas";
 
 export const GET = route(async ({ url }) => {
 	const p = url.searchParams;
-	return ok(await listProducts(db(), {
-		search: p.get("q")?.trim() || undefined,
-		status: p.get("status") || undefined,
-		limit: Number(p.get("limit")) || undefined,
-		offset: Number(p.get("offset")) || undefined,
-	}));
+	return ok(
+		await listProducts(db(), {
+			search: p.get("q")?.trim() || undefined,
+			status: p.get("status") || undefined,
+			limit: Number(p.get("limit")) || undefined,
+			offset: Number(p.get("offset")) || undefined,
+		}),
+	);
 });
 
 export const POST = route(async (ctx) => {

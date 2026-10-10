@@ -17,6 +17,11 @@ const media = product.media.map((m) => ({ ...m, url: urls.get(m.media_id) ?? nul
 
 <AdminLayout title={product.name} active="products">
 	<h1>{product.name}</h1>
-	<p><a href={`/products/${product.slug}`} target="_blank" rel="noopener">Preview on storefront</a> {product.status !== "active" && <span class="muted">(visible to administrators only until active)</span>}</p>
+	<p>
+		<a href={`/products/${product.slug}`} target="_blank" rel="noopener">
+			Preview on storefront
+		</a>{" "}
+		{product.status !== "active" && <span class="muted">(visible to administrators only until active)</span>}
+	</p>
 	<ProductEditor categories={categories} product={{ ...product, media }} currency={store.currency} />
 </AdminLayout>

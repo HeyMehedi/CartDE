@@ -8,7 +8,16 @@ const input = z.object({ enabled: z.array(z.string().max(41)).max(50) }).strict(
 async function snapshot() {
 	const { available, rejected } = registry();
 	const enabled = await getEnabledIds(db());
-	return { available: available.map((e) => ({ id: e.id, name: e.name, description: e.description, enabled: enabled.includes(e.id), hooks: Object.keys(e.hooks) })), rejected };
+	return {
+		available: available.map((e) => ({
+			id: e.id,
+			name: e.name,
+			description: e.description,
+			enabled: enabled.includes(e.id),
+			hooks: Object.keys(e.hooks),
+		})),
+		rejected,
+	};
 }
 
 export const GET = route(async () => ok(await snapshot()));

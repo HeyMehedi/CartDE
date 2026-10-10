@@ -9,25 +9,42 @@ const data = JSON.stringify({ enabled }).replace(/</g, "\\u003c");
 
 <AdminLayout title="Extensions" active="extensions">
 	<h1>Extensions</h1>
-	<p class="muted">Extensions are code that ships with this store (<code>src/extensions/</code>). They can adjust delivery charges and discounts, react to order events and add homepage sections. They never touch your data directly, and a faulty extension is skipped instead of breaking checkout. Everything is off until you switch it on.</p>
+	<p class="muted">
+		Extensions are code that ships with this store (<code>src/extensions/</code>). They can adjust delivery charges and discounts, react to
+		order events and add homepage sections. They never touch your data directly, and a faulty extension is skipped instead of breaking
+		checkout. Everything is off until you switch it on.
+	</p>
 	<div id="msg" role="alert" hidden class="error"></div>
 	<script type="application/json" id="ext-data" set:html={data} />
-	{
-		available.length === 0 ? <p class="muted">No extensions are installed.</p> : (
-			<form id="ext-form">
-				{available.map((e) => (
-					<fieldset>
-						<legend>{e.name}</legend>
-						<label style="font-weight:400"><input type="checkbox" name="ext" value={e.id} checked={enabled.includes(e.id)} /> Enabled</label>
-						<p>{e.description}</p>
-						<p class="muted">Hooks used: {Object.keys(e.hooks).join(", ") || "none"}</p>
-					</fieldset>
+	{available.length === 0 ? (
+		<p class="muted">No extensions are installed.</p>
+	) : (
+		<form id="ext-form">
+			{available.map((e) => (
+				<fieldset>
+					<legend>{e.name}</legend>
+					<label style="font-weight:400">
+						<input type="checkbox" name="ext" value={e.id} checked={enabled.includes(e.id)} /> Enabled
+					</label>
+					<p>{e.description}</p>
+					<p class="muted">Hooks used: {Object.keys(e.hooks).join(", ") || "none"}</p>
+				</fieldset>
+			))}
+			<button type="submit">Save</button>
+		</form>
+	)}
+	{rejected.length > 0 && (
+		<>
+			<h2>Not loaded</h2>
+			<ul>
+				{rejected.map((r) => (
+					<li>
+						<strong>{r.id}</strong>: {r.reason}
+					</li>
 				))}
-				<button type="submit">Save</button>
-			</form>
-		)
-	}
-	{rejected.length > 0 && <><h2>Not loaded</h2><ul>{rejected.map((r) => <li><strong>{r.id}</strong>: {r.reason}</li>)}</ul></>}
+			</ul>
+		</>
+	)}
 </AdminLayout>
 
 <script>

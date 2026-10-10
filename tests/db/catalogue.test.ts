@@ -1,6 +1,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createTestDb } from "../helpers/d1";
-import { createProduct, listProducts, getProduct, getActiveProductBySlug, updateProduct, addVariant, updateVariant, deleteVariant, deleteProduct, adjustStock } from "../../src/cartde/db/products";
+import {
+	createProduct,
+	listProducts,
+	getProduct,
+	getActiveProductBySlug,
+	updateProduct,
+	addVariant,
+	updateVariant,
+	deleteVariant,
+	deleteProduct,
+	adjustStock,
+} from "../../src/cartde/db/products";
 import { createCategory, listCategories, updateCategory, deleteCategory } from "../../src/cartde/db/categories";
 import { getStore, updateStore } from "../../src/cartde/db/store";
 import { productInput } from "../../src/cartde/domain/schemas";
@@ -41,7 +52,15 @@ describe("products", () => {
 
 	it("generates unique slugs and rejects duplicate explicit slugs and SKUs", async () => {
 		await createProduct(db, tee());
-		const second = await createProduct(db, tee({ variants: [{ option_values: ["S"], price_minor: 1, sku: "X-S" }, { option_values: ["M"], price_minor: 1, sku: "X-M" }] }));
+		const second = await createProduct(
+			db,
+			tee({
+				variants: [
+					{ option_values: ["S"], price_minor: 1, sku: "X-S" },
+					{ option_values: ["M"], price_minor: 1, sku: "X-M" },
+				],
+			}),
+		);
 		expect(second.slug).toBe("cotton-tee-2");
 		await expect(createProduct(db, tee({ slug: "cotton-tee" }))).rejects.toMatchObject({ code: "conflict" });
 	});
@@ -53,8 +72,20 @@ describe("products", () => {
 	});
 
 	it("rejects variants that do not match the options", async () => {
-		await expect(createProduct(db, tee({ variants: [{ option_values: ["XL"], price_minor: 1 }] }))).rejects.toMatchObject({ code: "invalid" });
-		await expect(createProduct(db, tee({ variants: [{ option_values: ["S"], price_minor: 1 }, { option_values: ["s"], price_minor: 1 }] }))).rejects.toMatchObject({ code: "invalid" });
+		await expect(createProduct(db, tee({ variants: [{ option_values: ["XL"], price_minor: 1 }] }))).rejects.toMatchObject({
+			code: "invalid",
+		});
+		await expect(
+			createProduct(
+				db,
+				tee({
+					variants: [
+						{ option_values: ["S"], price_minor: 1 },
+						{ option_values: ["s"], price_minor: 1 },
+					],
+				}),
+			),
+		).rejects.toMatchObject({ code: "invalid" });
 	});
 
 	it("storefront hides drafts, archived products and products without active variants (FR-CAT-5)", async () => {
@@ -78,7 +109,9 @@ describe("products", () => {
 		const p = await createProduct(db, tee());
 		const after = await addVariant(db, p.id, { option_values: ["L"], price_minor: 99000, stock_qty: 2, status: "active" });
 		expect(after.variants.map((v) => v.title)).toEqual(["S", "M", "L"]);
-		await expect(addVariant(db, p.id, { option_values: ["l"], price_minor: 1, stock_qty: 0, status: "active" })).rejects.toMatchObject({ code: "conflict" });
+		await expect(addVariant(db, p.id, { option_values: ["l"], price_minor: 1, stock_qty: 0, status: "active" })).rejects.toMatchObject({
+			code: "conflict",
+		});
 		await deleteVariant(db, after.variants[2]!.id);
 		const single = await createProduct(db, productInput.parse({ name: "One", variants: [{ price_minor: 1 }] }));
 		await expect(deleteVariant(db, single.variants[0]!.id)).rejects.toMatchObject({ code: "invalid" });
@@ -102,7 +135,15 @@ describe("products", () => {
 
 describe("product media", () => {
 	it("stores ordered images, derives the featured image, and replaces on update", async () => {
-		const p = await createProduct(db, tee({ media: [{ media_id: "m1", alt: "Front" }, { media_id: "m2", alt: "Back" }] }));
+		const p = await createProduct(
+			db,
+			tee({
+				media: [
+					{ media_id: "m1", alt: "Front" },
+					{ media_id: "m2", alt: "Back" },
+				],
+			}),
+		);
 		expect(p.media.map((m) => m.media_id)).toEqual(["m1", "m2"]);
 		expect(p.featured_media_id).toBe("m1");
 		const u = await updateProduct(db, p.id, { media: [{ media_id: "m2", alt: "Back" }] });
@@ -119,7 +160,10 @@ describe("stock", () => {
 		expect((await adjustStock(db, v.id, { delta: 4, reason: "manual" }, "u")).stock_qty).toBe(9);
 		expect((await adjustStock(db, v.id, { delta: -9, reason: "manual", note: "damaged" }, "u")).stock_qty).toBe(0);
 		await expect(adjustStock(db, v.id, { delta: -1, reason: "manual" }, "u")).rejects.toMatchObject({ code: "invalid" });
-		const sum = await db.prepare(`SELECT SUM(delta) AS s FROM cartde_inventory_events WHERE variant_id = ?1`).bind(v.id).first<{ s: number }>();
+		const sum = await db
+			.prepare(`SELECT SUM(delta) AS s FROM cartde_inventory_events WHERE variant_id = ?1`)
+			.bind(v.id)
+			.first<{ s: number }>();
 		expect(sum?.s).toBe(0); // initial 5 + 4 - 9
 	});
 
@@ -145,7 +189,15 @@ describe("categories and store", () => {
 	it("creates the store row lazily and updates settings", async () => {
 		const s = await getStore(db);
 		expect(s.currency).toBe("BDT");
-		const u = await updateStore(db, { name: "Shop", currency: "BDT", locale: "en-BD", timezone: "Asia/Dhaka", delivery_inside_dhaka_minor: 6000, delivery_outside_dhaka_minor: 12000, low_stock_threshold: 3 });
+		const u = await updateStore(db, {
+			name: "Shop",
+			currency: "BDT",
+			locale: "en-BD",
+			timezone: "Asia/Dhaka",
+			delivery_inside_dhaka_minor: 6000,
+			delivery_outside_dhaka_minor: 12000,
+			low_stock_threshold: 3,
+		});
 		expect(u.name).toBe("Shop");
 		expect(u.delivery_outside_dhaka_minor).toBe(12000);
 	});

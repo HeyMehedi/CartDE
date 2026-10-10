@@ -4,7 +4,17 @@ import { listAudit } from "../db/audit";
 import { listCategories } from "../db/categories";
 import { resolveMediaUrls } from "../db/media";
 import { getActiveProductBySlug, getProduct, listProducts, type ProductDetail } from "../db/products";
-import { getCustomerOrders, getOrder, getOrderForShopper, lowStockVariants, recentOrders, salesByDay, listCustomers, listOrders, overview } from "../db/orders";
+import {
+	getCustomerOrders,
+	getOrder,
+	getOrderForShopper,
+	lowStockVariants,
+	recentOrders,
+	salesByDay,
+	listCustomers,
+	listOrders,
+	overview,
+} from "../db/orders";
 import { getStore } from "../db/store";
 import { startOfDayUtc } from "../domain/time";
 
@@ -29,22 +39,34 @@ export async function storefrontProduct(slug: string, previewAsAdmin: boolean): 
 
 export const STOREFRONT_PAGE_SIZE = 24;
 
-export interface StorefrontProduct { id: string; name: string; slug: string; featured_media_id: string | null; price_minor: number }
+export interface StorefrontProduct {
+	id: string;
+	name: string;
+	slug: string;
+	featured_media_id: string | null;
+	price_minor: number;
+}
 
 /** FR-SF-2: newest first, 24 per page, optional category filter. */
-export async function storefrontProducts(opts: { category?: string; page?: number; pageSize?: number } = {}): Promise<{ items: StorefrontProduct[]; total: number; page: number; pageSize: number }> {
+export async function storefrontProducts(
+	opts: { category?: string; page?: number; pageSize?: number } = {},
+): Promise<{ items: StorefrontProduct[]; total: number; page: number; pageSize: number }> {
 	const page = Math.max(1, Math.floor(opts.page ?? 1));
 	const pageSize = opts.pageSize ?? STOREFRONT_PAGE_SIZE;
 	const filter = `p.status = 'active'
 		AND EXISTS (SELECT 1 FROM cartde_variants av WHERE av.product_id = p.id AND av.status = 'active')
 		AND (?1 IS NULL OR EXISTS (SELECT 1 FROM cartde_product_categories pc JOIN cartde_categories c ON c.id = pc.category_id WHERE pc.product_id = p.id AND c.slug = ?1))`;
 	const [list, count] = await db().batch([
-		db().prepare(
-			`SELECT p.id, p.name, p.slug, p.featured_media_id, MIN(v.price_minor) AS price_minor
+		db()
+			.prepare(
+				`SELECT p.id, p.name, p.slug, p.featured_media_id, MIN(v.price_minor) AS price_minor
 			 FROM cartde_products p JOIN cartde_variants v ON v.product_id = p.id AND v.status = 'active'
 			 WHERE ${filter} GROUP BY p.id ORDER BY p.published_at DESC, p.id DESC LIMIT ?2 OFFSET ?3`,
-		).bind(opts.category ?? null, pageSize, (page - 1) * pageSize),
-		db().prepare(`SELECT COUNT(*) AS n FROM cartde_products p WHERE ${filter}`).bind(opts.category ?? null),
+			)
+			.bind(opts.category ?? null, pageSize, (page - 1) * pageSize),
+		db()
+			.prepare(`SELECT COUNT(*) AS n FROM cartde_products p WHERE ${filter}`)
+			.bind(opts.category ?? null),
 	]);
 	return { items: list.results as StorefrontProduct[], total: (count.results[0] as { n: number }).n, page, pageSize };
 }

@@ -9,7 +9,10 @@ import { join } from "node:path";
  */
 class Stmt {
 	private args: unknown[] = [];
-	constructor(private db: DatabaseSync, readonly sql: string) {}
+	constructor(
+		private db: DatabaseSync,
+		readonly sql: string,
+	) {}
 	bind(...args: unknown[]) {
 		this.args = args;
 		return this;
@@ -38,7 +41,10 @@ export function createTestDb(): D1Database {
 	const db = new DatabaseSync(":memory:");
 	db.exec("PRAGMA foreign_keys = ON");
 	const dir = join(import.meta.dirname, "../../migrations");
-	for (const f of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) db.exec(readFileSync(join(dir, f), "utf8"));
+	for (const f of readdirSync(dir)
+		.filter((f) => f.endsWith(".sql"))
+		.sort())
+		db.exec(readFileSync(join(dir, f), "utf8"));
 	return {
 		prepare: (sql: string) => new Stmt(db, sql),
 		async batch(stmts: Stmt[]) {

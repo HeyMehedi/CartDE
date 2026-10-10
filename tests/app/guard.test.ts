@@ -48,8 +48,12 @@ describe("guard", () => {
 		expect(decide(req({ method: "POST", headers: ok }))).toEqual({ action: "allow" });
 		expect(decide(req({ method: "POST", headers: { "x-cartde-request": "1", origin: "https://shop.test" } }))).toEqual({ action: "allow" });
 		expect(decide(req({ method: "POST", headers: { "sec-fetch-site": "same-origin" } }))).toMatchObject({ code: "csrf" });
-		expect(decide(req({ method: "DELETE", headers: { "sec-fetch-site": "cross-site", "x-cartde-request": "1" } }))).toMatchObject({ code: "csrf" });
-		expect(decide(req({ method: "PATCH", headers: { "x-cartde-request": "1", origin: "https://evil.test" } }))).toMatchObject({ code: "csrf" });
+		expect(decide(req({ method: "DELETE", headers: { "sec-fetch-site": "cross-site", "x-cartde-request": "1" } }))).toMatchObject({
+			code: "csrf",
+		});
+		expect(decide(req({ method: "PATCH", headers: { "x-cartde-request": "1", origin: "https://evil.test" } }))).toMatchObject({
+			code: "csrf",
+		});
 		expect(decide(req({ method: "POST", headers: { "x-cartde-request": "1" } }))).toMatchObject({ code: "csrf" });
 	});
 

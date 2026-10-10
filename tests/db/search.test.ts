@@ -6,7 +6,16 @@ import { productInput } from "../../src/cartde/domain/schemas";
 
 let db: D1Database;
 const add = (name: string, extra: Record<string, unknown> = {}) =>
-	createProduct(db, productInput.parse({ name, status: "active", variants: [{ price_minor: 1000, sku: extra.sku as string | undefined }], ...extra, ...(extra.sku ? { variants: [{ price_minor: 1000, sku: extra.sku }] } : {}) }));
+	createProduct(
+		db,
+		productInput.parse({
+			name,
+			status: "active",
+			variants: [{ price_minor: 1000, sku: extra.sku as string | undefined }],
+			...extra,
+			...(extra.sku ? { variants: [{ price_minor: 1000, sku: extra.sku }] } : {}),
+		}),
+	);
 
 beforeEach(async () => {
 	db = createTestDb();

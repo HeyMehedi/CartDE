@@ -10,7 +10,12 @@ if (form) {
 		msg.hidden = true;
 		try {
 			await api("PATCH", "/extensions", { enabled: $$("input[name=ext]:checked", form).map((i) => i.value) });
-			msg.className = "ok"; msg.textContent = "Saved."; msg.hidden = false;
-		} catch (err) { showError(msg, err); msg.className = "error"; }
+			msg.className = "ok";
+			msg.textContent = "Saved.";
+			msg.hidden = false;
+		} catch (err) {
+			showError(msg, err);
+			msg.className = "error";
+		}
 	});
 }

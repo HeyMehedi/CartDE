@@ -1,10 +1,5 @@
 ---
-import {
-	getEmDashEntry,
-	getSeoMeta,
-	decodeSlug,
-	getSiteSettings,
-} from "emdash";
+import { getEmDashEntry, getSeoMeta, decodeSlug, getSiteSettings } from "emdash";
 import { Image, PortableText, WidgetArea } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
 import { resolveStarterSiteIdentity } from "../../utils/site-identity";
@@ -45,49 +40,41 @@ const categories = post.data.terms?.category ?? [];
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
 	<article>
-		{
-			post.data.featured_image && (
-				<div {...post.edit.featured_image}>
-					<Image image={post.data.featured_image} />
-				</div>
-			)
-		}
+		{post.data.featured_image && (
+			<div {...post.edit.featured_image}>
+				<Image image={post.data.featured_image} />
+			</div>
+		)}
 
 		<h1 {...post.edit.title}>{post.data.title}</h1>
 
-		{
-			post.data.publishedAt && (
-				<time datetime={post.data.publishedAt.toISOString()}>
-					{post.data.publishedAt.toLocaleDateString("en-US", {
-						year: "numeric",
-						month: "long",
-						day: "numeric",
-					})}
-				</time>
-			)
-		}
+		{post.data.publishedAt && (
+			<time datetime={post.data.publishedAt.toISOString()}>
+				{post.data.publishedAt.toLocaleDateString("en-US", {
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				})}
+			</time>
+		)}
 
-		{
-			categories.length > 0 && (
-				<div>
-					{categories.map((c) => (
-						<a href={`/category/${c.slug}`}>{c.label}</a>
-					))}
-				</div>
-			)
-		}
+		{categories.length > 0 && (
+			<div>
+				{categories.map((c) => (
+					<a href={`/category/${c.slug}`}>{c.label}</a>
+				))}
+			</div>
+		)}
 
 		<PortableText value={post.data.content} />
 
-		{
-			tags.length > 0 && (
-				<div>
-					{tags.map((t) => (
-						<a href={`/tag/${t.slug}`}>{t.label}</a>
-					))}
-				</div>
-			)
-		}
+		{tags.length > 0 && (
+			<div>
+				{tags.map((t) => (
+					<a href={`/tag/${t.slug}`}>{t.label}</a>
+				))}
+			</div>
+		)}
 	</article>
 
 	<aside>

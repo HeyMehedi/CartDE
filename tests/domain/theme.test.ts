@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { contrastRatio, defaultTheme, effectiveTheme, PRESETS, PRESET_IDS, themeCss, themeSettingsInput } from "../../src/cartde/domain/theme";
+import {
+	contrastRatio,
+	defaultTheme,
+	effectiveTheme,
+	PRESETS,
+	PRESET_IDS,
+	themeCss,
+	themeSettingsInput,
+} from "../../src/cartde/domain/theme";
 
 describe("contrast", () => {
 	it("matches known WCAG values", () => {
@@ -36,7 +44,9 @@ describe("theme settings", () => {
 	it("rejects low-contrast button, text and accent colours", () => {
 		expect(themeSettingsInput.safeParse({ colors: { accent: "#cccccc", accent_fg: "#ffffff" } }).success).toBe(false);
 		expect(themeSettingsInput.safeParse({ colors: { bg: "#ffffff", fg: "#aaaaaa" } }).success).toBe(false);
-		expect(themeSettingsInput.safeParse({ colors: { bg: "#ffffff", fg: "#111111", accent: "#eeeeee", accent_fg: "#000000" } }).success).toBe(false);
+		expect(
+			themeSettingsInput.safeParse({ colors: { bg: "#ffffff", fg: "#111111", accent: "#eeeeee", accent_fg: "#000000" } }).success,
+		).toBe(false);
 	});
 	it("requires background and text together", () => {
 		expect(themeSettingsInput.safeParse({ colors: { bg: "#ffffff" } }).success).toBe(false); // default preset has no text colour to pair with
@@ -45,7 +55,15 @@ describe("theme settings", () => {
 		expect(themeSettingsInput.safeParse({ preset: "warm", colors: { bg: "#ffffff" } }).success).toBe(true); // warm already defines a text colour
 	});
 	it("validates footer links and sections", () => {
-		const ok = { footer: { text: "© Shop", links: [{ label: "About", url: "/about" }, { label: "Facebook", url: "https://facebook.com/shop" }] } };
+		const ok = {
+			footer: {
+				text: "© Shop",
+				links: [
+					{ label: "About", url: "/about" },
+					{ label: "Facebook", url: "https://facebook.com/shop" },
+				],
+			},
+		};
 		expect(themeSettingsInput.safeParse(ok).success).toBe(true);
 		for (const url of ["javascript:alert(1)", "//evil.test", "/\\evil", "ftp://x", "data:text/html,x", ""]) {
 			expect(themeSettingsInput.safeParse({ footer: { links: [{ label: "x", url }] } }).success, url).toBe(false);

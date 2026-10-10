@@ -6,7 +6,17 @@ import { defaultTheme, type ThemeSettings } from "../domain/theme";
 import { langFor, t as translate, type Lang, type MessageKey } from "../i18n/messages";
 
 export interface StorefrontContext {
-	store: Pick<StoreRow, "name" | "currency" | "locale" | "contact_phone" | "status" | "delivery_inside_dhaka_minor" | "delivery_outside_dhaka_minor" | "low_stock_threshold">;
+	store: Pick<
+		StoreRow,
+		| "name"
+		| "currency"
+		| "locale"
+		| "contact_phone"
+		| "status"
+		| "delivery_inside_dhaka_minor"
+		| "delivery_outside_dhaka_minor"
+		| "low_stock_threshold"
+	>;
 	theme: ThemeSettings;
 	lang: Lang;
 	t: (key: MessageKey, vars?: Record<string, string | number>) => string;
@@ -14,9 +24,20 @@ export interface StorefrontContext {
 
 const TTL_MS = 15_000;
 let cached: { at: number; data: Omit<StorefrontContext, "t"> } | null = null;
-export const resetStorefrontCache = () => { cached = null; };
+export const resetStorefrontCache = () => {
+	cached = null;
+};
 
-const FALLBACK_STORE: StorefrontContext["store"] = { name: "Store", currency: "BDT", locale: "en-BD", contact_phone: null, status: "active", delivery_inside_dhaka_minor: 0, delivery_outside_dhaka_minor: 0, low_stock_threshold: 5 };
+const FALLBACK_STORE: StorefrontContext["store"] = {
+	name: "Store",
+	currency: "BDT",
+	locale: "en-BD",
+	contact_phone: null,
+	status: "active",
+	delivery_inside_dhaka_minor: 0,
+	delivery_outside_dhaka_minor: 0,
+	low_stock_threshold: 5,
+};
 
 export async function storefrontContext(): Promise<StorefrontContext> {
 	if (!cached || Date.now() - cached.at > TTL_MS) {

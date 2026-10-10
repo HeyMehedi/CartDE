@@ -42,7 +42,10 @@ export const productInput = z.object({
 	seo_description: trimmed(160).nullable().optional(),
 	category_ids: z.array(z.string().length(26)).max(50).default([]),
 	/** Ordered product images (EmDash media IDs). The first is the featured image. */
-	media: z.array(z.object({ media_id: trimmed(64).min(1), alt: trimmed(300).default("") })).max(20).default([]),
+	media: z
+		.array(z.object({ media_id: trimmed(64).min(1), alt: trimmed(300).default("") }))
+		.max(20)
+		.default([]),
 	options: z
 		.array(z.object({ name: trimmed(60).min(1), values: z.array(trimmed(80).min(1)).min(1).max(MAX_VARIANTS) }))
 		.max(MAX_OPTIONS)
@@ -60,7 +63,11 @@ export const categoryInput = z.object({
 export type CategoryInput = z.infer<typeof categoryInput>;
 
 export const stockAdjustmentInput = z.object({
-	delta: z.number().int().refine((n) => n !== 0, "Adjustment must not be zero.").refine((n) => Math.abs(n) <= 1_000_000),
+	delta: z
+		.number()
+		.int()
+		.refine((n) => n !== 0, "Adjustment must not be zero.")
+		.refine((n) => Math.abs(n) <= 1_000_000),
 	reason: z.enum(["manual", "import", "return"]).default("manual"),
 	note: trimmed(500).nullable().optional(),
 });
@@ -121,7 +128,11 @@ export const setupInput = storeSettingsInput.extend({ with_demo_products: z.bool
 
 export const discountDraftInput = z
 	.object({
-		code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,32}$/, "Use 3-32 letters, numbers, hyphens or underscores."),
+		code: z
+			.string()
+			.trim()
+			.toUpperCase()
+			.regex(/^[A-Z0-9_-]{3,32}$/, "Use 3-32 letters, numbers, hyphens or underscores."),
 		kind: z.enum(["percent", "fixed"]),
 		/** Percent: 1-100. Fixed: minor units. */
 		value: z.number().int().min(1).max(1_000_000_000),

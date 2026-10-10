@@ -69,5 +69,14 @@ export function decide(req: GuardRequest): GuardDecision {
 
 /** Routes shoppers use; shown a "store not ready" page until setup completes (FR-DEP-5). */
 export function isStorefrontPath(pathname: string): boolean {
-	return pathname === "/" || pathname === "/cart" || pathname === "/checkout" || pathname === "/search" || pathname.startsWith("/products") || pathname.startsWith("/orders/") || pathname === "/api/cartde/checkout" || pathname.startsWith("/api/cartde/cart/");
+	return (
+		pathname === "/" ||
+		pathname === "/cart" ||
+		pathname === "/checkout" ||
+		pathname === "/search" ||
+		pathname.startsWith("/products") ||
+		pathname.startsWith("/orders/") ||
+		pathname === "/api/cartde/checkout" ||
+		pathname.startsWith("/api/cartde/cart/")
+	);
 }

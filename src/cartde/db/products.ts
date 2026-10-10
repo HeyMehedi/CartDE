@@ -83,27 +83,48 @@ export async function listProducts(
 }
 
 export async function getProduct(db: D1Database, id: string): Promise<ProductDetail> {
-	const row = await db.prepare(`SELECT * FROM cartde_products WHERE id = ?1`).bind(id).first<Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">>();
+	const row = await db
+		.prepare(`SELECT * FROM cartde_products WHERE id = ?1`)
+		.bind(id)
+		.first<Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">>();
 	if (!row) throw new CartdeError("not_found", "Product not found.");
 	return hydrate(db, row);
 }
 
 export async function getActiveProductBySlug(db: D1Database, slug: string): Promise<ProductDetail | null> {
-	const row = await db.prepare(`SELECT * FROM cartde_products WHERE slug = ?1 AND status = 'active'`).bind(slug).first<Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">>();
+	const row = await db
+		.prepare(`SELECT * FROM cartde_products WHERE slug = ?1 AND status = 'active'`)
+		.bind(slug)
+		.first<Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">>();
 	if (!row) return null;
 	const detail = await hydrate(db, row);
 	detail.variants = detail.variants.filter((v) => v.status === "active");
 	return detail.variants.length ? detail : null; // FR-CAT-5
 }
 
-async function hydrate(db: D1Database, row: Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">): Promise<ProductDetail> {
+async function hydrate(
+	db: D1Database,
+	row: Omit<ProductDetail, "category_ids" | "media" | "options" | "variants">,
+): Promise<ProductDetail> {
 	const [cats, media, opts, vals, vars, links] = await db.batch([
 		db.prepare(`SELECT category_id FROM cartde_product_categories WHERE product_id = ?1`).bind(row.id),
 		db.prepare(`SELECT id, media_id, alt FROM cartde_product_media WHERE product_id = ?1 ORDER BY sort_order`).bind(row.id),
 		db.prepare(`SELECT id, name FROM cartde_product_options WHERE product_id = ?1 ORDER BY position`).bind(row.id),
-		db.prepare(`SELECT ov.id, ov.option_id, ov.value FROM cartde_product_option_values ov JOIN cartde_product_options o ON o.id = ov.option_id WHERE o.product_id = ?1 ORDER BY ov.position`).bind(row.id),
-		db.prepare(`SELECT id, title, sku, price_minor, compare_at_minor, stock_qty, status, position FROM cartde_variants WHERE product_id = ?1 ORDER BY position`).bind(row.id),
-		db.prepare(`SELECT vov.variant_id, ov.value, o.position AS opos FROM cartde_variant_option_values vov JOIN cartde_product_option_values ov ON ov.id = vov.option_value_id JOIN cartde_product_options o ON o.id = ov.option_id WHERE o.product_id = ?1 ORDER BY o.position`).bind(row.id),
+		db
+			.prepare(
+				`SELECT ov.id, ov.option_id, ov.value FROM cartde_product_option_values ov JOIN cartde_product_options o ON o.id = ov.option_id WHERE o.product_id = ?1 ORDER BY ov.position`,
+			)
+			.bind(row.id),
+		db
+			.prepare(
+				`SELECT id, title, sku, price_minor, compare_at_minor, stock_qty, status, position FROM cartde_variants WHERE product_id = ?1 ORDER BY position`,
+			)
+			.bind(row.id),
+		db
+			.prepare(
+				`SELECT vov.variant_id, ov.value, o.position AS opos FROM cartde_variant_option_values vov JOIN cartde_product_option_values ov ON ov.id = vov.option_value_id JOIN cartde_product_options o ON o.id = ov.option_id WHERE o.product_id = ?1 ORDER BY o.position`,
+			)
+			.bind(row.id),
 	]);
 	const valuesByVariant = new Map<string, string[]>();
 	for (const l of links.results as { variant_id: string; value: string }[]) {
@@ -157,38 +178,80 @@ export async function createProduct(db: D1Database, input: ProductInput, actorUs
 				`INSERT INTO cartde_products (id, name, slug, description_md, status, featured_media_id, seo_title, seo_description, published_at, created_at, updated_at)
 				 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)`,
 			)
-			.bind(id, input.name, slug, input.description_md, input.status, input.media[0]?.media_id ?? input.featured_media_id ?? null, input.seo_title ?? null, input.seo_description ?? null, input.status === "active" ? now : null, now),
+			.bind(
+				id,
+				input.name,
+				slug,
+				input.description_md,
+				input.status,
+				input.media[0]?.media_id ?? input.featured_media_id ?? null,
+				input.seo_title ?? null,
+				input.seo_description ?? null,
+				input.status === "active" ? now : null,
+				now,
+			),
 	];
 	for (const categoryId of input.category_ids) {
 		stmts.push(db.prepare(`INSERT INTO cartde_product_categories (product_id, category_id) VALUES (?1,?2)`).bind(id, categoryId));
 	}
 	input.media.forEach((m, i) => {
-		stmts.push(db.prepare(`INSERT INTO cartde_product_media (id, product_id, media_id, alt, sort_order) VALUES (?1,?2,?3,?4,?5)`).bind(newId(), id, m.media_id, m.alt, i));
+		stmts.push(
+			db
+				.prepare(`INSERT INTO cartde_product_media (id, product_id, media_id, alt, sort_order) VALUES (?1,?2,?3,?4,?5)`)
+				.bind(newId(), id, m.media_id, m.alt, i),
+		);
 	});
 	const valueIds = new Map<string, string>(); // "optionIndex:value(lower)" -> id
 	input.options.forEach((option, oi) => {
 		const optionId = newId();
-		stmts.push(db.prepare(`INSERT INTO cartde_product_options (id, product_id, name, position) VALUES (?1,?2,?3,?4)`).bind(optionId, id, option.name, oi));
+		stmts.push(
+			db
+				.prepare(`INSERT INTO cartde_product_options (id, product_id, name, position) VALUES (?1,?2,?3,?4)`)
+				.bind(optionId, id, option.name, oi),
+		);
 		option.values.forEach((value, vi) => {
 			const valueId = newId();
 			valueIds.set(`${oi}:${value.toLowerCase()}`, valueId);
-			stmts.push(db.prepare(`INSERT INTO cartde_product_option_values (id, option_id, value, position) VALUES (?1,?2,?3,?4)`).bind(valueId, optionId, value, vi));
+			stmts.push(
+				db
+					.prepare(`INSERT INTO cartde_product_option_values (id, option_id, value, position) VALUES (?1,?2,?3,?4)`)
+					.bind(valueId, optionId, value, vi),
+			);
 		});
 	});
 	input.variants.forEach((v, i) => {
 		const variantId = newId();
 		stmts.push(
 			db
-				.prepare(`INSERT INTO cartde_variants (id, product_id, title, sku, price_minor, compare_at_minor, stock_qty, status, position, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)`)
-				.bind(variantId, id, variantTitle(v.option_values), v.sku ?? null, v.price_minor, v.compare_at_minor ?? null, v.stock_qty, v.status, i, now),
+				.prepare(
+					`INSERT INTO cartde_variants (id, product_id, title, sku, price_minor, compare_at_minor, stock_qty, status, position, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)`,
+				)
+				.bind(
+					variantId,
+					id,
+					variantTitle(v.option_values),
+					v.sku ?? null,
+					v.price_minor,
+					v.compare_at_minor ?? null,
+					v.stock_qty,
+					v.status,
+					i,
+					now,
+				),
 		);
 		v.option_values.forEach((val, oi) => {
-			stmts.push(db.prepare(`INSERT INTO cartde_variant_option_values (variant_id, option_value_id) VALUES (?1,?2)`).bind(variantId, valueIds.get(`${oi}:${val.toLowerCase()}`)!));
+			stmts.push(
+				db
+					.prepare(`INSERT INTO cartde_variant_option_values (variant_id, option_value_id) VALUES (?1,?2)`)
+					.bind(variantId, valueIds.get(`${oi}:${val.toLowerCase()}`)!),
+			);
 		});
 		if (v.stock_qty > 0) {
 			stmts.push(
 				db
-					.prepare(`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, actor_user_id, note, created_at) VALUES (?1,?2,?3,'manual',?4,'Initial stock',?5)`)
+					.prepare(
+						`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, actor_user_id, note, created_at) VALUES (?1,?2,?3,'manual',?4,'Initial stock',?5)`,
+					)
 					.bind(newId(), variantId, v.stock_qty, actorUserId, now),
 			);
 		}
@@ -204,7 +267,12 @@ export async function createProduct(db: D1Database, input: ProductInput, actorUs
 export async function updateProduct(
 	db: D1Database,
 	id: string,
-	patch: Partial<Pick<ProductInput, "name" | "slug" | "description_md" | "status" | "featured_media_id" | "seo_title" | "seo_description" | "category_ids" | "media">>,
+	patch: Partial<
+		Pick<
+			ProductInput,
+			"name" | "slug" | "description_md" | "status" | "featured_media_id" | "seo_title" | "seo_description" | "category_ids" | "media"
+		>
+	>,
 ): Promise<ProductDetail> {
 	const current = await getProduct(db, id);
 	const { media, ...fields } = patch;
@@ -217,17 +285,35 @@ export async function updateProduct(
 	const publishedAt = next.status === "active" ? (current.published_at ?? now) : current.published_at;
 	const stmts = [
 		db
-			.prepare(`UPDATE cartde_products SET name=?2, slug=?3, description_md=?4, status=?5, featured_media_id=?6, seo_title=?7, seo_description=?8, published_at=?9, updated_at=?10 WHERE id=?1`)
-			.bind(id, next.name, next.slug, next.description_md, next.status, next.featured_media_id, next.seo_title, next.seo_description, publishedAt, now),
+			.prepare(
+				`UPDATE cartde_products SET name=?2, slug=?3, description_md=?4, status=?5, featured_media_id=?6, seo_title=?7, seo_description=?8, published_at=?9, updated_at=?10 WHERE id=?1`,
+			)
+			.bind(
+				id,
+				next.name,
+				next.slug,
+				next.description_md,
+				next.status,
+				next.featured_media_id,
+				next.seo_title,
+				next.seo_description,
+				publishedAt,
+				now,
+			),
 	];
 	if (patch.category_ids) {
 		stmts.push(db.prepare(`DELETE FROM cartde_product_categories WHERE product_id = ?1`).bind(id));
-		for (const c of patch.category_ids) stmts.push(db.prepare(`INSERT INTO cartde_product_categories (product_id, category_id) VALUES (?1,?2)`).bind(id, c));
+		for (const c of patch.category_ids)
+			stmts.push(db.prepare(`INSERT INTO cartde_product_categories (product_id, category_id) VALUES (?1,?2)`).bind(id, c));
 	}
 	if (media) {
 		stmts.push(db.prepare(`DELETE FROM cartde_product_media WHERE product_id = ?1`).bind(id));
 		media.forEach((m, i) => {
-			stmts.push(db.prepare(`INSERT INTO cartde_product_media (id, product_id, media_id, alt, sort_order) VALUES (?1,?2,?3,?4,?5)`).bind(newId(), id, m.media_id, m.alt, i));
+			stmts.push(
+				db
+					.prepare(`INSERT INTO cartde_product_media (id, product_id, media_id, alt, sort_order) VALUES (?1,?2,?3,?4,?5)`)
+					.bind(newId(), id, m.media_id, m.alt, i),
+			);
 		});
 	}
 	try {
@@ -247,7 +333,11 @@ export async function deleteProduct(db: D1Database, id: string): Promise<void> {
 	await db.prepare(`DELETE FROM cartde_products WHERE id = ?1`).bind(id).run();
 }
 
-async function resolveOptionValueIds(db: D1Database, productId: string, values: string[]): Promise<{ ids: string[]; creates: D1PreparedStatement[] }> {
+async function resolveOptionValueIds(
+	db: D1Database,
+	productId: string,
+	values: string[],
+): Promise<{ ids: string[]; creates: D1PreparedStatement[] }> {
 	const product = await getProduct(db, productId);
 	if (values.length !== product.options.length) {
 		throw new CartdeError("invalid", `Pick one value for each of the ${product.options.length} option(s).`);
@@ -259,7 +349,11 @@ async function resolveOptionValueIds(db: D1Database, productId: string, values: 
 		const found = option.values.find((v) => v.value.toLowerCase() === val.toLowerCase());
 		if (found) return ids.push(found.id);
 		const valueId = newId();
-		creates.push(db.prepare(`INSERT INTO cartde_product_option_values (id, option_id, value, position) VALUES (?1,?2,?3,?4)`).bind(valueId, option.id, val, option.values.length));
+		creates.push(
+			db
+				.prepare(`INSERT INTO cartde_product_option_values (id, option_id, value, position) VALUES (?1,?2,?3,?4)`)
+				.bind(valueId, option.id, val, option.values.length),
+		);
 		ids.push(valueId);
 	});
 	const key = (vs: string[]) => vs.join("\u0000").toLowerCase();
@@ -269,7 +363,12 @@ async function resolveOptionValueIds(db: D1Database, productId: string, values: 
 	return { ids, creates };
 }
 
-export async function addVariant(db: D1Database, productId: string, input: VariantInput, actorUserId: string | null = null): Promise<ProductDetail> {
+export async function addVariant(
+	db: D1Database,
+	productId: string,
+	input: VariantInput,
+	actorUserId: string | null = null,
+): Promise<ProductDetail> {
 	const product = await getProduct(db, productId);
 	if (product.variants.length >= 100) throw new CartdeError("invalid", "A product can have at most 100 variants.");
 	const { ids, creates } = await resolveOptionValueIds(db, productId, input.option_values);
@@ -278,12 +377,33 @@ export async function addVariant(db: D1Database, productId: string, input: Varia
 	const stmts = [
 		...creates,
 		db
-			.prepare(`INSERT INTO cartde_variants (id, product_id, title, sku, price_minor, compare_at_minor, stock_qty, status, position, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)`)
-			.bind(variantId, productId, variantTitle(input.option_values), input.sku ?? null, input.price_minor, input.compare_at_minor ?? null, input.stock_qty, input.status, product.variants.length, now),
-		...ids.map((valueId) => db.prepare(`INSERT INTO cartde_variant_option_values (variant_id, option_value_id) VALUES (?1,?2)`).bind(variantId, valueId)),
+			.prepare(
+				`INSERT INTO cartde_variants (id, product_id, title, sku, price_minor, compare_at_minor, stock_qty, status, position, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)`,
+			)
+			.bind(
+				variantId,
+				productId,
+				variantTitle(input.option_values),
+				input.sku ?? null,
+				input.price_minor,
+				input.compare_at_minor ?? null,
+				input.stock_qty,
+				input.status,
+				product.variants.length,
+				now,
+			),
+		...ids.map((valueId) =>
+			db.prepare(`INSERT INTO cartde_variant_option_values (variant_id, option_value_id) VALUES (?1,?2)`).bind(variantId, valueId),
+		),
 	];
 	if (input.stock_qty > 0) {
-		stmts.push(db.prepare(`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, actor_user_id, note, created_at) VALUES (?1,?2,?3,'manual',?4,'Initial stock',?5)`).bind(newId(), variantId, input.stock_qty, actorUserId, now));
+		stmts.push(
+			db
+				.prepare(
+					`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, actor_user_id, note, created_at) VALUES (?1,?2,?3,'manual',?4,'Initial stock',?5)`,
+				)
+				.bind(newId(), variantId, input.stock_qty, actorUserId, now),
+		);
 	}
 	try {
 		await db.batch(stmts);
@@ -303,11 +423,15 @@ export async function updateVariant(
 	if (!cur) throw new CartdeError("not_found", "Variant not found.");
 	const price = patch.price_minor ?? cur.price_minor;
 	const compare = patch.compare_at_minor === undefined ? cur.compare_at_minor : patch.compare_at_minor;
-	if (compare != null && compare < price) throw new CartdeError("invalid", "Compare-at price must not be below the price.", { compare_at_minor: "Below price." });
+	if (compare != null && compare < price)
+		throw new CartdeError("invalid", "Compare-at price must not be below the price.", { compare_at_minor: "Below price." });
 	const status = patch.status ?? cur.status;
 	if (status === "inactive" && cur.status === "active") {
 		const product = await db.prepare(`SELECT status FROM cartde_products WHERE id = ?1`).bind(cur.product_id).first<{ status: string }>();
-		const { results } = await db.prepare(`SELECT id FROM cartde_variants WHERE product_id = ?1 AND status = 'active' AND id != ?2`).bind(cur.product_id, variantId).all();
+		const { results } = await db
+			.prepare(`SELECT id FROM cartde_variants WHERE product_id = ?1 AND status = 'active' AND id != ?2`)
+			.bind(cur.product_id, variantId)
+			.all();
 		if (product?.status === "active" && results.length === 0) {
 			throw new CartdeError("invalid", "An active product needs at least one active variant.");
 		}
@@ -347,9 +471,13 @@ export async function adjustStock(
 	}
 	const now = nowIso();
 	const [upd] = await db.batch([
-		db.prepare(`UPDATE cartde_variants SET stock_qty = stock_qty + ?2, updated_at = ?3 WHERE id = ?1 AND stock_qty + ?2 >= 0`).bind(variantId, input.delta, now),
 		db
-			.prepare(`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, actor_user_id, note, created_at) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7 WHERE changes() > 0`)
+			.prepare(`UPDATE cartde_variants SET stock_qty = stock_qty + ?2, updated_at = ?3 WHERE id = ?1 AND stock_qty + ?2 >= 0`)
+			.bind(variantId, input.delta, now),
+		db
+			.prepare(
+				`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, actor_user_id, note, created_at) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7 WHERE changes() > 0`,
+			)
 			.bind(newId(), variantId, input.delta, input.reason, actorUserId, input.note ?? null, now),
 	]);
 	if (!upd!.meta.changes) throw new CartdeError("conflict", "Stock changed concurrently; reload and try again.");

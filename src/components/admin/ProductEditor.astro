@@ -24,21 +24,31 @@ const data = JSON.stringify({ mode, product: product ?? null, currency }).replac
 		<label for="slug">URL slug {mode === "create" && <span class="muted">(leave empty to generate)</span>}</label>
 		<input id="slug" name="slug" type="text" maxlength="80" value={product?.slug ?? ""} />
 
-		<label for="description_md">Description <span class="muted">(Markdown: **bold**, *italic*, - lists, links)</span></label>
+		<label for="description_md">
+			Description <span class="muted">(Markdown: **bold**, *italic*, - lists, links)</span>
+		</label>
 		<textarea id="description_md" name="description_md" rows="7">{product?.description_md ?? ""}</textarea>
 
 		<div class="row">
 			<div>
 				<label for="status">Status</label>
 				<select id="status" name="status">
-					{["draft", "active", "archived"].map((s) => <option value={s} selected={(product?.status ?? "draft") === s}>{s}</option>)}
+					{["draft", "active", "archived"].map((s) => (
+						<option value={s} selected={(product?.status ?? "draft") === s}>
+							{s}
+						</option>
+					))}
 				</select>
 			</div>
 		</div>
 
 		<fieldset>
 			<legend>Categories</legend>
-			{categories.length === 0 && <span class="muted">None yet. <a href="/admin/categories">Create categories</a>.</span>}
+			{categories.length === 0 && (
+				<span class="muted">
+					None yet. <a href="/admin/categories">Create categories</a>.
+				</span>
+			)}
 			{categories.map((c) => (
 				<label style="display:inline-block;margin-right:1rem;font-weight:400">
 					<input type="checkbox" name="category" value={c.id} checked={product?.category_ids.includes(c.id)} /> {c.name}
@@ -47,11 +57,21 @@ const data = JSON.stringify({ mode, product: product ?? null, currency }).replac
 		</fieldset>
 
 		<fieldset>
-			<legend>Images <span class="muted">(first image is the featured image)</span></legend>
+			<legend>
+				Images <span class="muted">(first image is the featured image)</span>
+			</legend>
 			<ul id="media-list" style="list-style:none;padding:0"></ul>
-			<button type="button" id="media-choose">Choose from media library</button>
+			<button type="button" id="media-choose">
+				Choose from media library
+			</button>
 			<div id="media-dialog" hidden>
-				<p class="muted">Upload new files in the <a href="/_emdash/admin" target="_blank" rel="noopener">EmDash media library</a>, then choose them here.</p>
+				<p class="muted">
+					Upload new files in the{" "}
+					<a href="/_emdash/admin" target="_blank" rel="noopener">
+						EmDash media library
+					</a>
+					, then choose them here.
+				</p>
 				<div id="media-grid" class="row"></div>
 			</div>
 		</fieldset>
@@ -69,43 +89,89 @@ const data = JSON.stringify({ mode, product: product ?? null, currency }).replac
 				<legend>Options and variants</legend>
 				<p class="muted">Up to 3 options (for example Size: S, M, L). Leave empty for a product with one price.</p>
 				<div id="options"></div>
-				<button type="button" id="option-add">Add option</button>
-				<button type="button" id="variants-build">Build variants</button>
+				<button type="button" id="option-add">
+					Add option
+				</button>
+				<button type="button" id="variants-build">
+					Build variants
+				</button>
 				<div class="scroll">
 					<table id="variants-table">
-						<thead><tr><th>Variant</th><th>Price ({currency})</th><th>Compare-at</th><th>SKU</th><th>Stock</th><th>Active</th></tr></thead>
+						<thead>
+							<tr>
+								<th>Variant</th>
+								<th>Price ({currency})</th>
+								<th>Compare-at</th>
+								<th>SKU</th>
+								<th>Stock</th>
+								<th>Active</th>
+							</tr>
+						</thead>
 						<tbody></tbody>
 					</table>
 				</div>
 			</fieldset>
 		)}
 
-		<button type="submit" id="save">{mode === "create" ? "Create product" : "Save changes"}</button>
-		{mode === "edit" && product?.status === "draft" && <button type="button" id="delete" style="margin-left:1rem">Delete draft</button>}
+		<button type="submit" id="save">
+			{mode === "create" ? "Create product" : "Save changes"}
+		</button>
+		{mode === "edit" && product?.status === "draft" && (
+			<button type="button" id="delete" style="margin-left:1rem">
+				Delete draft
+			</button>
+		)}
 	</form>
 
-	{
-		mode === "edit" && product && (
-			<section>
-				<h2>Variants and stock</h2>
-				<p class="muted">Options: {product.options.length ? product.options.map((o) => `${o.name} (${o.values.map((v) => v.value).join(", ")})`).join("; ") : "none"}</p>
-				<div class="scroll">
-					<table id="variants-edit">
-						<thead><tr><th>Variant</th><th>Price</th><th>Compare-at</th><th>SKU</th><th>Active</th><th>Stock</th><th></th></tr></thead>
-						<tbody></tbody>
-					</table>
+	{mode === "edit" && product && (
+		<section>
+			<h2>Variants and stock</h2>
+			<p class="muted">
+				Options:{" "}
+				{product.options.length ? product.options.map((o) => `${o.name} (${o.values.map((v) => v.value).join(", ")})`).join("; ") : "none"}
+			</p>
+			<div class="scroll">
+				<table id="variants-edit">
+					<thead>
+						<tr>
+							<th>Variant</th>
+							<th>Price</th>
+							<th>Compare-at</th>
+							<th>SKU</th>
+							<th>Active</th>
+							<th>Stock</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+			<h3>Add variant</h3>
+			<div class="row" id="variant-add">
+				{product.options.map((o) => (
+					<div>
+						<label>{o.name}</label>
+						<input type="text" data-option-value maxlength="80" />
+					</div>
+				))}
+				<div>
+					<label>Price</label>
+					<input type="text" id="nv-price" inputmode="decimal" />
 				</div>
-				<h3>Add variant</h3>
-				<div class="row" id="variant-add">
-					{product.options.map((o) => <div><label>{o.name}</label><input type="text" data-option-value maxlength="80" /></div>)}
-					<div><label>Price</label><input type="text" id="nv-price" inputmode="decimal" /></div>
-					<div><label>SKU</label><input type="text" id="nv-sku" /></div>
-					<div><label>Stock</label><input type="text" id="nv-stock" inputmode="numeric" value="0" /></div>
-					<button type="button" id="nv-add">Add variant</button>
+				<div>
+					<label>SKU</label>
+					<input type="text" id="nv-sku" />
 				</div>
-			</section>
-		)
-	}
+				<div>
+					<label>Stock</label>
+					<input type="text" id="nv-stock" inputmode="numeric" value="0" />
+				</div>
+				<button type="button" id="nv-add">
+					Add variant
+				</button>
+			</div>
+		</section>
+	)}
 </div>
 
 <script>

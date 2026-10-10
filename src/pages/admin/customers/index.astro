@@ -8,18 +8,42 @@ const when = new Intl.DateTimeFormat(store.locale, { dateStyle: "medium", timeZo
 
 <AdminLayout title="Customers" active="customers">
 	<h1>Customers</h1>
-	<p><a href="/api/cartde/admin/export/customers.csv">Download CSV</a></p>
-	<form method="get" class="row"><div><label for="q">Search name or phone</label><input id="q" name="q" type="text" value={q} /></div><button type="submit">Search</button></form>
-	{
-		customers.length === 0 ? <p class="muted">No customers yet.</p> : (
-			<div class="scroll">
-				<table>
-					<thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Last order</th></tr></thead>
-					<tbody>
-						{customers.map((c) => <tr><td><a href={`/admin/customers/${c.id}`}>{c.name}</a></td><td>{c.phone}</td><td>{c.order_count}</td><td>{c.last_order_at ? when.format(new Date(c.last_order_at)) : "—"}</td></tr>)}
-					</tbody>
-				</table>
-			</div>
-		)
-	}
+	<p>
+		<a href="/api/cartde/admin/export/customers.csv">Download CSV</a>
+	</p>
+	<form method="get" class="row">
+		<div>
+			<label for="q">Search name or phone</label>
+			<input id="q" name="q" type="text" value={q} />
+		</div>
+		<button type="submit">Search</button>
+	</form>
+	{customers.length === 0 ? (
+		<p class="muted">No customers yet.</p>
+	) : (
+		<div class="scroll">
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Phone</th>
+						<th>Orders</th>
+						<th>Last order</th>
+					</tr>
+				</thead>
+				<tbody>
+					{customers.map((c) => (
+						<tr>
+							<td>
+								<a href={`/admin/customers/${c.id}`}>{c.name}</a>
+							</td>
+							<td>{c.phone}</td>
+							<td>{c.order_count}</td>
+							<td>{c.last_order_at ? when.format(new Date(c.last_order_at)) : "—"}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	)}
 </AdminLayout>

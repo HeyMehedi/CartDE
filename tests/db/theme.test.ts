@@ -13,7 +13,11 @@ describe("theme persistence", () => {
 		expect((await getTheme(db)).preset).toBe("default");
 	});
 	it("round-trips a validated theme", async () => {
-		await saveTheme(db, { preset: "warm", colors: { accent: "#7c2d12" }, footer: { text: "© Shop", links: [{ label: "About", url: "/about" }] } });
+		await saveTheme(db, {
+			preset: "warm",
+			colors: { accent: "#7c2d12" },
+			footer: { text: "© Shop", links: [{ label: "About", url: "/about" }] },
+		});
 		const t = await getTheme(db);
 		expect(t).toMatchObject({ preset: "warm", colors: { accent: "#7c2d12" }, footer: { text: "© Shop" } });
 	});

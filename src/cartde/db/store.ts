@@ -36,7 +36,8 @@ export async function updateStore(db: D1Database, input: z.infer<typeof storeSet
 	if (input.currency !== current.currency) {
 		// FR-ADM-5: order amounts are stored in the store currency, so it is fixed once any order exists.
 		const order = await db.prepare(`SELECT 1 AS x FROM cartde_orders LIMIT 1`).first();
-		if (order) throw new CartdeError("conflict", "Currency cannot change once an order exists.", { currency: "Locked because orders exist." });
+		if (order)
+			throw new CartdeError("conflict", "Currency cannot change once an order exists.", { currency: "Locked because orders exist." });
 	}
 	await db
 		.prepare(
@@ -45,9 +46,18 @@ export async function updateStore(db: D1Database, input: z.infer<typeof storeSet
 			 updated_at=?11, status = CASE WHEN ?12 IS NOT NULL AND status != 'setup' THEN ?12 ELSE status END WHERE id = 1`,
 		)
 		.bind(
-			input.name, input.currency, input.locale, input.timezone, input.contact_phone ?? null,
-			input.contact_email ?? null, input.address_text ?? null, input.delivery_inside_dhaka_minor,
-			input.delivery_outside_dhaka_minor, input.low_stock_threshold, nowIso(), input.status ?? null,
+			input.name,
+			input.currency,
+			input.locale,
+			input.timezone,
+			input.contact_phone ?? null,
+			input.contact_email ?? null,
+			input.address_text ?? null,
+			input.delivery_inside_dhaka_minor,
+			input.delivery_outside_dhaka_minor,
+			input.low_stock_threshold,
+			nowIso(),
+			input.status ?? null,
 		)
 		.run();
 	return getStore(db);

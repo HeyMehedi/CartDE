@@ -1,9 +1,5 @@
 ---
-import {
-	getTaxonomyTermsWithCacheHint,
-	getEmDashCollection,
-	decodeSlug,
-} from "emdash";
+import { getTaxonomyTermsWithCacheHint, getEmDashCollection, decodeSlug } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
 
@@ -34,39 +30,30 @@ if (Astro.cache?.enabled) {
 }
 ---
 
-<Base
-	title={`Posts tagged "${term.label}"`}
-	description={`Posts tagged ${term.label}`}
->
+<Base title={`Posts tagged "${term.label}"`} description={`Posts tagged ${term.label}`}>
 	<h1>Tag: {term.label}</h1>
 
-	{
-		posts.length === 0 ? (
-			<p>No posts with this tag yet.</p>
-		) : (
-			<ul>
-				{posts.map((post) => (
-					<li>
-						<a href={`/posts/${post.id}`}>
-							{post.data.featured_image && (
-								<div {...post.edit.featured_image}><Image image={post.data.featured_image} /></div>
-							)}
-							<h2 {...post.edit.title}>{post.data.title}</h2>
-						</a>
-						{post.data.excerpt && <p {...post.edit.excerpt}>{post.data.excerpt}</p>}
-					</li>
-				))}
-			</ul>
-		)
-	}
+	{posts.length === 0 ? (
+		<p>No posts with this tag yet.</p>
+	) : (
+		<ul>
+			{posts.map((post) => (
+				<li>
+					<a href={`/posts/${post.id}`}>
+						{post.data.featured_image && (
+							<div {...post.edit.featured_image}>
+								<Image image={post.data.featured_image} />
+							</div>
+						)}
+						<h2 {...post.edit.title}>{post.data.title}</h2>
+					</a>
+					{post.data.excerpt && <p {...post.edit.excerpt}>{post.data.excerpt}</p>}
+				</li>
+			))}
+		</ul>
+	)}
 	<nav aria-label="Pagination">
 		{cursor && <a href={`/tag/${term.slug}`}>First page</a>}
-		{
-			nextCursor && (
-				<a href={`/tag/${term.slug}?cursor=${encodeURIComponent(nextCursor)}`}>
-					Next page
-				</a>
-			)
-		}
+		{nextCursor && <a href={`/tag/${term.slug}?cursor=${encodeURIComponent(nextCursor)}`}>Next page</a>}
 	</nav>
 </Base>

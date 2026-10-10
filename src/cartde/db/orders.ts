@@ -38,23 +38,59 @@ export async function priceCart(db: D1Database, lines: { variant_id: string; qua
 		)
 		.bind(...merged.map((l) => l.variant_id))
 		.all<{
-			variant_id: string; product_id: string; product_name: string; product_slug: string; variant_title: string; sku: string | null;
-			price_minor: number; compare_at_minor: number | null; stock_qty: number; variant_status: string; product_status: string; media_id: string | null;
+			variant_id: string;
+			product_id: string;
+			product_name: string;
+			product_slug: string;
+			variant_title: string;
+			sku: string | null;
+			price_minor: number;
+			compare_at_minor: number | null;
+			stock_qty: number;
+			variant_status: string;
+			product_status: string;
+			media_id: string | null;
 		}>();
 	const byId = new Map(results.map((r) => [r.variant_id, r]));
 	return merged.map((l): CartLineView => {
 		const r = byId.get(l.variant_id);
 		if (!r) {
-			return { variant_id: l.variant_id, product_id: "", product_name: "Unavailable item", product_slug: "", variant_title: "", sku: null, unit_price_minor: 0, compare_at_minor: null, quantity: l.quantity, stock_qty: 0, available: false, problem: "This item is no longer sold.", line_total_minor: 0, media_id: null };
+			return {
+				variant_id: l.variant_id,
+				product_id: "",
+				product_name: "Unavailable item",
+				product_slug: "",
+				variant_title: "",
+				sku: null,
+				unit_price_minor: 0,
+				compare_at_minor: null,
+				quantity: l.quantity,
+				stock_qty: 0,
+				available: false,
+				problem: "This item is no longer sold.",
+				line_total_minor: 0,
+				media_id: null,
+			};
 		}
 		let problem: string | null = null;
 		if (r.product_status !== "active" || r.variant_status !== "active") problem = "This item is no longer available.";
 		else if (r.stock_qty < 1) problem = "Out of stock.";
 		else if (r.stock_qty < l.quantity) problem = `Only ${r.stock_qty} left.`;
 		return {
-			variant_id: r.variant_id, product_id: r.product_id, product_name: r.product_name, product_slug: r.product_slug, variant_title: r.variant_title, sku: r.sku,
-			unit_price_minor: r.price_minor, compare_at_minor: r.compare_at_minor, quantity: l.quantity, stock_qty: r.stock_qty, available: problem === null, problem,
-			line_total_minor: r.price_minor * l.quantity, media_id: r.media_id,
+			variant_id: r.variant_id,
+			product_id: r.product_id,
+			product_name: r.product_name,
+			product_slug: r.product_slug,
+			variant_title: r.variant_title,
+			sku: r.sku,
+			unit_price_minor: r.price_minor,
+			compare_at_minor: r.compare_at_minor,
+			quantity: l.quantity,
+			stock_qty: r.stock_qty,
+			available: problem === null,
+			problem,
+			line_total_minor: r.price_minor * l.quantity,
+			media_id: r.media_id,
 		};
 	});
 }
@@ -68,7 +104,10 @@ export interface PlacedOrder {
 
 const token = (): string => {
 	const bytes = crypto.getRandomValues(new Uint8Array(24));
-	return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+	return btoa(String.fromCharCode(...bytes))
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=+$/, "");
 };
 
 /** Aborts the surrounding batch when the previous statement changed no rows (NOT NULL violation on purpose). */
@@ -76,7 +115,10 @@ const guard = (db: D1Database) => db.prepare(`INSERT INTO cartde_counters (name,
 const isGuardFailure = (err: unknown) => err instanceof Error && /NOT NULL constraint failed: cartde_counters\.value/i.test(err.message);
 
 async function findByKey(db: D1Database, key: string): Promise<PlacedOrder | null> {
-	const row = await db.prepare(`SELECT order_number, access_token, total_minor FROM cartde_orders WHERE idempotency_key = ?1`).bind(key).first<Omit<PlacedOrder, "existing">>();
+	const row = await db
+		.prepare(`SELECT order_number, access_token, total_minor FROM cartde_orders WHERE idempotency_key = ?1`)
+		.bind(key)
+		.first<Omit<PlacedOrder, "existing">>();
 	return row ? { ...row, existing: true } : null;
 }
 
@@ -91,8 +133,16 @@ export async function quoteTotals(store: StoreRow, lines: readonly CartLineView[
 	const subtotal = lines.reduce((sum, l) => sum + l.unit_price_minor * l.quantity, 0);
 	const adjusted = extensions
 		? await extensions.adjustPricing({
-				currency: store.currency, district, subtotal_minor: subtotal, delivery_minor: baseDelivery,
-				lines: lines.map((l) => ({ product_id: l.product_id, variant_id: l.variant_id, quantity: l.quantity, unit_price_minor: l.unit_price_minor })),
+				currency: store.currency,
+				district,
+				subtotal_minor: subtotal,
+				delivery_minor: baseDelivery,
+				lines: lines.map((l) => ({
+					product_id: l.product_id,
+					variant_id: l.variant_id,
+					quantity: l.quantity,
+					unit_price_minor: l.unit_price_minor,
+				})),
 			})
 		: { delivery_minor: baseDelivery, discount_minor: 0 };
 	return computeTotals(lines, adjusted.delivery_minor, adjusted.discount_minor);
@@ -108,7 +158,12 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 
 	const lines = await priceCart(db, input.lines);
 	const bad = lines.find((l) => !l.available);
-	if (bad) throw new CartdeError("conflict", `${bad.product_name}${bad.variant_title && bad.variant_title !== "Default" ? ` (${bad.variant_title})` : ""}: ${bad.problem}`, { [bad.variant_id]: bad.problem ?? "Unavailable" });
+	if (bad)
+		throw new CartdeError(
+			"conflict",
+			`${bad.product_name}${bad.variant_title && bad.variant_title !== "Default" ? ` (${bad.variant_title})` : ""}: ${bad.problem}`,
+			{ [bad.variant_id]: bad.problem ?? "Unavailable" },
+		);
 
 	const totals = await quoteTotals(store, lines, input.district, hooks.extensions);
 	const orderId = newId();
@@ -116,11 +171,17 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 	const now = nowIso();
 
 	const stmts: D1PreparedStatement[] = [
-		db.prepare(`INSERT OR IGNORE INTO cartde_customers (id, name, phone, email, created_at) VALUES (?1,?2,?3,?4,?5)`).bind(newId(), input.name, input.phone, input.email ?? null, now),
+		db
+			.prepare(`INSERT OR IGNORE INTO cartde_customers (id, name, phone, email, created_at) VALUES (?1,?2,?3,?4,?5)`)
+			.bind(newId(), input.name, input.phone, input.email ?? null, now),
 	];
 	for (const l of lines) {
 		stmts.push(
-			db.prepare(`UPDATE cartde_variants SET stock_qty = stock_qty - ?2, updated_at = ?3 WHERE id = ?1 AND stock_qty >= ?2 AND status = 'active'`).bind(l.variant_id, l.quantity, now),
+			db
+				.prepare(
+					`UPDATE cartde_variants SET stock_qty = stock_qty - ?2, updated_at = ?3 WHERE id = ?1 AND stock_qty >= ?2 AND status = 'active'`,
+				)
+				.bind(l.variant_id, l.quantity, now),
 			guard(db),
 		);
 	}
@@ -134,22 +195,60 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 				 VALUES (?1, (SELECT value FROM cartde_counters WHERE name = 'order_number'), ?2, 'pending', 'cod', 'unpaid', ?3, ?4, ?5, ?6, ?7,
 				   (SELECT id FROM cartde_customers WHERE phone = ?8), ?9, ?8, ?10, ?9, ?8, ?11, ?12, ?13, ?14, ?15, ?16, ?16, ?16)`,
 			)
-			.bind(orderId, accessToken, store.currency, totals.subtotal_minor, totals.delivery_minor, totals.discount_minor, totals.total_minor, input.phone, input.name, input.email ?? null, input.address, input.area, input.district, input.note ?? null, input.idempotency_key, now),
+			.bind(
+				orderId,
+				accessToken,
+				store.currency,
+				totals.subtotal_minor,
+				totals.delivery_minor,
+				totals.discount_minor,
+				totals.total_minor,
+				input.phone,
+				input.name,
+				input.email ?? null,
+				input.address,
+				input.area,
+				input.district,
+				input.note ?? null,
+				input.idempotency_key,
+				now,
+			),
 	);
 	for (const l of lines) {
 		stmts.push(
 			db
-				.prepare(`INSERT INTO cartde_order_items (id, order_id, product_id, variant_id, product_name, variant_title, sku, quantity, unit_price_minor, line_total_minor) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)`)
-				.bind(newId(), orderId, l.product_id, l.variant_id, l.product_name, l.variant_title, l.sku, l.quantity, l.unit_price_minor, l.line_total_minor),
+				.prepare(
+					`INSERT INTO cartde_order_items (id, order_id, product_id, variant_id, product_name, variant_title, sku, quantity, unit_price_minor, line_total_minor) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)`,
+				)
+				.bind(
+					newId(),
+					orderId,
+					l.product_id,
+					l.variant_id,
+					l.product_name,
+					l.variant_title,
+					l.sku,
+					l.quantity,
+					l.unit_price_minor,
+					l.line_total_minor,
+				),
 			db
-				.prepare(`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, order_id, created_at) VALUES (?1,?2,?3,'order',?4,?5)`)
+				.prepare(
+					`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, order_id, created_at) VALUES (?1,?2,?3,'order',?4,?5)`,
+				)
 				.bind(newId(), l.variant_id, -l.quantity, orderId, now),
 		);
 	}
 	stmts.push(
-		db.prepare(`INSERT INTO cartde_order_events (id, order_id, from_status, to_status, note, created_at) VALUES (?1,?2,NULL,'pending','Order placed',?3)`).bind(newId(), orderId, now),
 		db
-			.prepare(`INSERT INTO cartde_customer_addresses (id, customer_id, recipient_name, phone, line1, area, district, created_at) SELECT ?1, id, ?2, ?3, ?4, ?5, ?6, ?7 FROM cartde_customers WHERE phone = ?3`)
+			.prepare(
+				`INSERT INTO cartde_order_events (id, order_id, from_status, to_status, note, created_at) VALUES (?1,?2,NULL,'pending','Order placed',?3)`,
+			)
+			.bind(newId(), orderId, now),
+		db
+			.prepare(
+				`INSERT INTO cartde_customer_addresses (id, customer_id, recipient_name, phone, line1, area, district, created_at) SELECT ?1, id, ?2, ?3, ?4, ?5, ?6, ?7 FROM cartde_customers WHERE phone = ?3`,
+			)
 			.bind(newId(), input.name, input.phone, input.address, input.area, input.district, now),
 	);
 
@@ -163,15 +262,24 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 		if (isGuardFailure(err)) {
 			// Stock moved between pricing and the batch; tell the shopper which line is short.
 			const fresh = (await priceCart(db, input.lines)).find((l) => !l.available);
-			throw new CartdeError("conflict", fresh ? `${fresh.product_name}: ${fresh.problem}` : "An item just sold out. Please review your cart.", fresh ? { [fresh.variant_id]: fresh.problem ?? "Unavailable" } : undefined);
+			throw new CartdeError(
+				"conflict",
+				fresh ? `${fresh.product_name}: ${fresh.problem}` : "An item just sold out. Please review your cart.",
+				fresh ? { [fresh.variant_id]: fresh.problem ?? "Unavailable" } : undefined,
+			);
 		}
 		throw err;
 	}
 	const placed = await findByKey(db, input.idempotency_key);
 	if (!placed) throw new Error("Order was not stored.");
 	await hooks.extensions?.emitOrderEvent({
-		type: "order.placed", order_number: placed.order_number, status: "pending", from_status: null,
-		total_minor: placed.total_minor, currency: store.currency, item_count: lines.reduce((n, l) => n + l.quantity, 0),
+		type: "order.placed",
+		order_number: placed.order_number,
+		status: "pending",
+		from_status: null,
+		total_minor: placed.total_minor,
+		currency: store.currency,
+		item_count: lines.reduce((n, l) => n + l.quantity, 0),
 	});
 	return { ...placed, existing: false };
 }
@@ -179,23 +287,71 @@ export async function placeOrder(db: D1Database, input: z.infer<typeof checkoutI
 // ---------- reads ----------
 
 export interface OrderRow {
-	id: string; order_number: number; status: OrderStatus; payment_method: "cod"; payment_status: PaymentStatus; currency: string;
-	subtotal_minor: number; delivery_minor: number; discount_minor: number; total_minor: number;
-	customer_id: string | null; customer_name: string; customer_phone: string; customer_email: string | null;
-	ship_recipient_name: string; ship_phone: string; ship_line1: string; ship_line2: string | null; ship_area: string; ship_district: string;
-	ship_postal_code: string | null; ship_instructions: string | null; customer_note: string | null; merchant_note: string | null; placed_at: string;
+	id: string;
+	order_number: number;
+	status: OrderStatus;
+	payment_method: "cod";
+	payment_status: PaymentStatus;
+	currency: string;
+	subtotal_minor: number;
+	delivery_minor: number;
+	discount_minor: number;
+	total_minor: number;
+	customer_id: string | null;
+	customer_name: string;
+	customer_phone: string;
+	customer_email: string | null;
+	ship_recipient_name: string;
+	ship_phone: string;
+	ship_line1: string;
+	ship_line2: string | null;
+	ship_area: string;
+	ship_district: string;
+	ship_postal_code: string | null;
+	ship_instructions: string | null;
+	customer_note: string | null;
+	merchant_note: string | null;
+	placed_at: string;
 }
-export interface OrderItemRow { id: string; product_id: string | null; variant_id: string | null; product_name: string; variant_title: string; sku: string | null; quantity: number; unit_price_minor: number; line_total_minor: number }
-export interface OrderEventRow { id: string; from_status: string | null; to_status: string; actor_user_id: string | null; note: string | null; created_at: string }
-export interface OrderDetail extends OrderRow { items: OrderItemRow[]; events: OrderEventRow[] }
+export interface OrderItemRow {
+	id: string;
+	product_id: string | null;
+	variant_id: string | null;
+	product_name: string;
+	variant_title: string;
+	sku: string | null;
+	quantity: number;
+	unit_price_minor: number;
+	line_total_minor: number;
+}
+export interface OrderEventRow {
+	id: string;
+	from_status: string | null;
+	to_status: string;
+	actor_user_id: string | null;
+	note: string | null;
+	created_at: string;
+}
+export interface OrderDetail extends OrderRow {
+	items: OrderItemRow[];
+	events: OrderEventRow[];
+}
 
 const ORDER_COLS = `id, order_number, status, payment_method, payment_status, currency, subtotal_minor, delivery_minor, discount_minor, total_minor, customer_id, customer_name, customer_phone, customer_email,
   ship_recipient_name, ship_phone, ship_line1, ship_line2, ship_area, ship_district, ship_postal_code, ship_instructions, customer_note, merchant_note, placed_at`;
 
 async function withChildren(db: D1Database, row: OrderRow): Promise<OrderDetail> {
 	const [items, events] = await db.batch([
-		db.prepare(`SELECT id, product_id, variant_id, product_name, variant_title, sku, quantity, unit_price_minor, line_total_minor FROM cartde_order_items WHERE order_id = ?1 ORDER BY rowid`).bind(row.id),
-		db.prepare(`SELECT id, from_status, to_status, actor_user_id, note, created_at FROM cartde_order_events WHERE order_id = ?1 ORDER BY created_at, rowid`).bind(row.id),
+		db
+			.prepare(
+				`SELECT id, product_id, variant_id, product_name, variant_title, sku, quantity, unit_price_minor, line_total_minor FROM cartde_order_items WHERE order_id = ?1 ORDER BY rowid`,
+			)
+			.bind(row.id),
+		db
+			.prepare(
+				`SELECT id, from_status, to_status, actor_user_id, note, created_at FROM cartde_order_events WHERE order_id = ?1 ORDER BY created_at, rowid`,
+			)
+			.bind(row.id),
 	]);
 	return { ...row, items: items.results as OrderItemRow[], events: events.results as OrderEventRow[] };
 }
@@ -216,17 +372,32 @@ const safeEqual = (a: string, b: string) => {
 /** FR-ORD-6: public lookup needs the order number AND its access token. Returns null for any mismatch. */
 export async function getOrderForShopper(db: D1Database, orderNumber: number, accessToken: string): Promise<OrderDetail | null> {
 	if (!Number.isSafeInteger(orderNumber) || !accessToken) return null;
-	const row = await db.prepare(`SELECT ${ORDER_COLS}, access_token FROM cartde_orders WHERE order_number = ?1`).bind(orderNumber).first<OrderRow & { access_token: string }>();
+	const row = await db
+		.prepare(`SELECT ${ORDER_COLS}, access_token FROM cartde_orders WHERE order_number = ?1`)
+		.bind(orderNumber)
+		.first<OrderRow & { access_token: string }>();
 	if (!row || !safeEqual(row.access_token, accessToken)) return null;
 	const { access_token: _omit, ...order } = row;
 	return withChildren(db, order);
 }
 
-export interface OrderListItem { id: string; order_number: number; status: OrderStatus; customer_name: string; customer_phone: string; total_minor: number; currency: string; placed_at: string }
+export interface OrderListItem {
+	id: string;
+	order_number: number;
+	status: OrderStatus;
+	customer_name: string;
+	customer_phone: string;
+	total_minor: number;
+	currency: string;
+	placed_at: string;
+}
 
 export const ORDERS_PAGE_SIZE = 25;
 
-export async function listOrders(db: D1Database, opts: { q?: string; status?: string; page?: number } = {}): Promise<{ items: OrderListItem[]; total: number; page: number }> {
+export async function listOrders(
+	db: D1Database,
+	opts: { q?: string; status?: string; page?: number } = {},
+): Promise<{ items: OrderListItem[]; total: number; page: number }> {
 	const page = Math.max(1, Math.floor(opts.page ?? 1));
 	const q = opts.q?.trim() || null;
 	const like = q ? `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%` : null;
@@ -234,7 +405,11 @@ export async function listOrders(db: D1Database, opts: { q?: string; status?: st
 	const status = opts.status && (ORDER_STATUSES as readonly string[]).includes(opts.status) ? opts.status : null;
 	const where = `(?1 IS NULL OR order_number = ?2 OR customer_phone LIKE ?1 ESCAPE '\\' OR customer_name LIKE ?1 ESCAPE '\\') AND (?3 IS NULL OR status = ?3)`;
 	const [list, count] = await db.batch([
-		db.prepare(`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders WHERE ${where} ORDER BY order_number DESC LIMIT ?4 OFFSET ?5`).bind(like, number, status, ORDERS_PAGE_SIZE, (page - 1) * ORDERS_PAGE_SIZE),
+		db
+			.prepare(
+				`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders WHERE ${where} ORDER BY order_number DESC LIMIT ?4 OFFSET ?5`,
+			)
+			.bind(like, number, status, ORDERS_PAGE_SIZE, (page - 1) * ORDERS_PAGE_SIZE),
 		db.prepare(`SELECT COUNT(*) AS n FROM cartde_orders WHERE ${where}`).bind(like, number, status),
 	]);
 	return { items: list.results as OrderListItem[], total: (count.results[0] as { n: number }).n, page };
@@ -243,24 +418,48 @@ export async function listOrders(db: D1Database, opts: { q?: string; status?: st
 // ---------- writes ----------
 
 /** FR-ORD-9: transition with its side effects in one atomic batch, conditional on the status the caller saw. */
-export async function transitionOrder(db: D1Database, orderId: string, input: z.infer<typeof orderTransitionInput>, actorUserId: string | null, hooks: OrderHooks = {}): Promise<OrderDetail> {
+export async function transitionOrder(
+	db: D1Database,
+	orderId: string,
+	input: z.infer<typeof orderTransitionInput>,
+	actorUserId: string | null,
+	hooks: OrderHooks = {},
+): Promise<OrderDetail> {
 	const order = await getOrder(db, orderId);
 	if (!canTransition(order.status, input.to)) {
-		try { transitionEffect(order.status, input.to, order.payment_status); } catch (err) { throw new CartdeError("conflict", (err as Error).message); }
+		try {
+			transitionEffect(order.status, input.to, order.payment_status);
+		} catch (err) {
+			throw new CartdeError("conflict", (err as Error).message);
+		}
 	}
-	const effect = transitionEffect(order.status, input.to, order.payment_status, { restock: input.restock, cashReturned: input.cash_returned });
+	const effect = transitionEffect(order.status, input.to, order.payment_status, {
+		restock: input.restock,
+		cashReturned: input.cash_returned,
+	});
 	const now = nowIso();
 	const stmts: D1PreparedStatement[] = [
-		db.prepare(`UPDATE cartde_orders SET status = ?2, payment_status = ?3, updated_at = ?4 WHERE id = ?1 AND status = ?5`).bind(orderId, input.to, effect.payment, now, order.status),
+		db
+			.prepare(`UPDATE cartde_orders SET status = ?2, payment_status = ?3, updated_at = ?4 WHERE id = ?1 AND status = ?5`)
+			.bind(orderId, input.to, effect.payment, now, order.status),
 		guard(db),
-		db.prepare(`INSERT INTO cartde_order_events (id, order_id, from_status, to_status, actor_user_id, note, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)`).bind(newId(), orderId, order.status, input.to, actorUserId, input.note ?? null, now),
+		db
+			.prepare(
+				`INSERT INTO cartde_order_events (id, order_id, from_status, to_status, actor_user_id, note, created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)`,
+			)
+			.bind(newId(), orderId, order.status, input.to, actorUserId, input.note ?? null, now),
 	];
 	if (effect.restock && effect.restockReason) {
 		for (const item of order.items) {
 			if (!item.variant_id) continue; // variant was deleted; nothing to restock
 			stmts.push(
-				db.prepare(`UPDATE cartde_variants SET stock_qty = stock_qty + ?2, updated_at = ?3 WHERE id = ?1`).bind(item.variant_id, item.quantity, now),
-				db.prepare(`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, order_id, actor_user_id, note, created_at) SELECT ?1,?2,?3,?4,?5,?6,?7,?8 WHERE changes() > 0`)
+				db
+					.prepare(`UPDATE cartde_variants SET stock_qty = stock_qty + ?2, updated_at = ?3 WHERE id = ?1`)
+					.bind(item.variant_id, item.quantity, now),
+				db
+					.prepare(
+						`INSERT INTO cartde_inventory_events (id, variant_id, delta, reason, order_id, actor_user_id, note, created_at) SELECT ?1,?2,?3,?4,?5,?6,?7,?8 WHERE changes() > 0`,
+					)
 					.bind(newId(), item.variant_id, item.quantity, effect.restockReason, orderId, actorUserId, `Order #${order.order_number}`, now),
 			);
 		}
@@ -273,21 +472,36 @@ export async function transitionOrder(db: D1Database, orderId: string, input: z.
 	}
 	const updated = await getOrder(db, orderId);
 	await hooks.extensions?.emitOrderEvent({
-		type: "order.status_changed", order_number: updated.order_number, status: updated.status, from_status: order.status,
-		total_minor: updated.total_minor, currency: updated.currency, item_count: updated.items.reduce((n, i) => n + i.quantity, 0),
+		type: "order.status_changed",
+		order_number: updated.order_number,
+		status: updated.status,
+		from_status: order.status,
+		total_minor: updated.total_minor,
+		currency: updated.currency,
+		item_count: updated.items.reduce((n, i) => n + i.quantity, 0),
 	});
 	return updated;
 }
 
 /** FR-ORD-10: the only order field a merchant can edit after creation. */
 export async function setMerchantNote(db: D1Database, orderId: string, note: string | null): Promise<void> {
-	const res = await db.prepare(`UPDATE cartde_orders SET merchant_note = ?2, updated_at = ?3 WHERE id = ?1`).bind(orderId, note, nowIso()).run();
+	const res = await db
+		.prepare(`UPDATE cartde_orders SET merchant_note = ?2, updated_at = ?3 WHERE id = ?1`)
+		.bind(orderId, note, nowIso())
+		.run();
 	if (!res.meta.changes) throw new CartdeError("not_found", "Order not found.");
 }
 
 // ---------- customers and overview ----------
 
-export interface CustomerRow { id: string; name: string; phone: string; email: string | null; order_count: number; last_order_at: string | null }
+export interface CustomerRow {
+	id: string;
+	name: string;
+	phone: string;
+	email: string | null;
+	order_count: number;
+	last_order_at: string | null;
+}
 
 export async function listCustomers(db: D1Database, opts: { q?: string; limit?: number } = {}): Promise<CustomerRow[]> {
 	const like = opts.q?.trim() ? `%${opts.q.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%` : null;
@@ -307,7 +521,9 @@ export async function getCustomerOrders(db: D1Database, customerId: string): Pro
 	const customer = (await listCustomers(db, { limit: 500 })).find((c) => c.id === customerId);
 	if (!customer) throw new CartdeError("not_found", "Customer not found.");
 	const { results } = await db
-		.prepare(`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders WHERE customer_id = ?1 ORDER BY order_number DESC`)
+		.prepare(
+			`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders WHERE customer_id = ?1 ORDER BY order_number DESC`,
+		)
 		.bind(customerId)
 		.all<OrderListItem>();
 	return { customer, orders: results };
@@ -320,7 +536,11 @@ export async function overview(db: D1Database, dayStartIso: string) {
 		db.prepare(`SELECT COUNT(*) AS n FROM cartde_orders WHERE status = 'pending'`),
 		db.prepare(`SELECT COUNT(*) AS n FROM cartde_orders WHERE placed_at >= ?1`).bind(dayStartIso),
 		db.prepare(`SELECT COUNT(*) AS n FROM cartde_products WHERE status = 'active'`),
-		db.prepare(`SELECT COUNT(*) AS n FROM cartde_variants v JOIN cartde_products p ON p.id = v.product_id WHERE v.status = 'active' AND p.status = 'active' AND v.stock_qty <= ?1`).bind(store.low_stock_threshold),
+		db
+			.prepare(
+				`SELECT COUNT(*) AS n FROM cartde_variants v JOIN cartde_products p ON p.id = v.product_id WHERE v.status = 'active' AND p.status = 'active' AND v.stock_qty <= ?1`,
+			)
+			.bind(store.low_stock_threshold),
 	]);
 	const n = (r: { results: unknown[] }) => (r.results[0] as { n: number }).n;
 	return { pending_orders: n(pending), orders_today: n(today), active_products: n(active), low_stock_variants: n(low) };
@@ -345,21 +565,32 @@ export async function salesSummary(db: D1Database, days: number, now: Date = new
 	const since = new Date(now.getTime() - days * 86_400_000).toISOString();
 	const [byStatus, totals, top] = await db.batch([
 		db.prepare(`SELECT status, COUNT(*) AS n FROM cartde_orders WHERE placed_at >= ?1 GROUP BY status`).bind(since),
-		db.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(total_minor), 0) AS revenue FROM cartde_orders WHERE placed_at >= ?1 AND status NOT IN ('cancelled', 'returned')`).bind(since),
-		db.prepare(
-			`SELECT i.product_name, SUM(i.quantity) AS quantity, SUM(i.line_total_minor) AS revenue_minor
+		db
+			.prepare(
+				`SELECT COUNT(*) AS n, COALESCE(SUM(total_minor), 0) AS revenue FROM cartde_orders WHERE placed_at >= ?1 AND status NOT IN ('cancelled', 'returned')`,
+			)
+			.bind(since),
+		db
+			.prepare(
+				`SELECT i.product_name, SUM(i.quantity) AS quantity, SUM(i.line_total_minor) AS revenue_minor
 			 FROM cartde_order_items i JOIN cartde_orders o ON o.id = i.order_id
 			 WHERE o.placed_at >= ?1 AND o.status NOT IN ('cancelled', 'returned')
 			 GROUP BY i.product_name ORDER BY quantity DESC, revenue_minor DESC LIMIT 5`,
-		).bind(since),
+			)
+			.bind(since),
 	]);
 	const t = totals.results[0] as { n: number; revenue: number };
 	const by_status: Record<string, number> = {};
 	for (const r of byStatus.results as { status: string; n: number }[]) by_status[r.status] = r.n;
 	const orders = Object.values(by_status).reduce((a, b) => a + b, 0);
 	return {
-		currency: store.currency, days, since, orders, revenue_minor: t.revenue,
-		average_order_minor: t.n ? Math.round(t.revenue / t.n) : 0, by_status,
+		currency: store.currency,
+		days,
+		since,
+		orders,
+		revenue_minor: t.revenue,
+		average_order_minor: t.n ? Math.round(t.revenue / t.n) : 0,
+		by_status,
 		top_products: top.results as SalesSummary["top_products"],
 	};
 }
@@ -374,13 +605,19 @@ export async function getOrderIdByNumber(db: D1Database, orderNumber: number): P
 
 export async function recentOrders(db: D1Database, limit = 10): Promise<OrderListItem[]> {
 	const { results } = await db
-		.prepare(`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders ORDER BY order_number DESC LIMIT ?1`)
+		.prepare(
+			`SELECT id, order_number, status, customer_name, customer_phone, total_minor, currency, placed_at FROM cartde_orders ORDER BY order_number DESC LIMIT ?1`,
+		)
 		.bind(Math.min(limit, 50))
 		.all<OrderListItem>();
 	return results;
 }
 
-export interface DaySales { date: string; orders: number; revenue_minor: number }
+export interface DaySales {
+	date: string;
+	orders: number;
+	revenue_minor: number;
+}
 
 /** Orders and revenue per calendar day in the store's time zone, oldest first, including empty days. Revenue excludes cancelled and returned orders. */
 export async function salesByDay(db: D1Database, days: number, timeZone: string, now: Date = new Date()): Promise<DaySales[]> {
@@ -402,7 +639,14 @@ export async function salesByDay(db: D1Database, days: number, timeZone: string,
 	return [...out.values()];
 }
 
-export interface LowStockRow { product_id: string; product_name: string; variant_id: string; variant_title: string; sku: string | null; stock_qty: number }
+export interface LowStockRow {
+	product_id: string;
+	product_name: string;
+	variant_id: string;
+	variant_title: string;
+	sku: string | null;
+	stock_qty: number;
+}
 
 export async function lowStockVariants(db: D1Database, threshold: number, limit = 50): Promise<LowStockRow[]> {
 	const { results } = await db

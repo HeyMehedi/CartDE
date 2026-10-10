@@ -29,14 +29,27 @@ export interface TransitionEffect {
 }
 
 /** Side effects of a valid transition. Throws on an invalid pair so callers cannot skip the check. */
-export function transitionEffect(from: OrderStatus, to: OrderStatus, current: PaymentStatus, opts: TransitionOptions = {}): TransitionEffect {
+export function transitionEffect(
+	from: OrderStatus,
+	to: OrderStatus,
+	current: PaymentStatus,
+	opts: TransitionOptions = {},
+): TransitionEffect {
 	if (!canTransition(from, to)) {
 		const allowed = TRANSITIONS[from];
-		throw new Error(allowed.length ? `An order that is ${from} can only become: ${allowed.join(", ")}.` : `An order that is ${from} cannot change status.`);
+		throw new Error(
+			allowed.length
+				? `An order that is ${from} can only become: ${allowed.join(", ")}.`
+				: `An order that is ${from} cannot change status.`,
+		);
 	}
 	if (to === "cancelled") return { restock: true, restockReason: "cancel", payment: current };
 	if (to === "returned") {
-		return { restock: opts.restock !== false, restockReason: "return", payment: from === "delivered" && opts.cashReturned ? "refunded" : current };
+		return {
+			restock: opts.restock !== false,
+			restockReason: "return",
+			payment: from === "delivered" && opts.cashReturned ? "refunded" : current,
+		};
 	}
 	return { restock: false, restockReason: null, payment: to === "delivered" ? "paid" : current };
 }

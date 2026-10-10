@@ -14,7 +14,10 @@ export interface CategoryRow {
 type Input = z.infer<typeof categoryInput>;
 
 async function takenSlugs(db: D1Database, exceptId?: string): Promise<Set<string>> {
-	const { results } = await db.prepare(`SELECT slug FROM cartde_categories WHERE id != ?1`).bind(exceptId ?? "").all<{ slug: string }>();
+	const { results } = await db
+		.prepare(`SELECT slug FROM cartde_categories WHERE id != ?1`)
+		.bind(exceptId ?? "")
+		.all<{ slug: string }>();
 	return new Set(results.map((r) => r.slug));
 }
 
@@ -31,7 +34,9 @@ export async function createCategory(db: D1Database, input: Input): Promise<Cate
 	const slug = input.slug ?? uniqueSlug(input.name, await takenSlugs(db));
 	try {
 		await db
-			.prepare(`INSERT INTO cartde_categories (id, name, slug, description, sort_order, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?6)`)
+			.prepare(
+				`INSERT INTO cartde_categories (id, name, slug, description, sort_order, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?6)`,
+			)
 			.bind(id, input.name, slug, input.description ?? null, input.sort_order, now)
 			.run();
 	} catch (err) {

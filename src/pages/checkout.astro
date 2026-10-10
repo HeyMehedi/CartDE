@@ -9,41 +9,87 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
 const { store, t, lang } = await storefrontContext();
 const fee = (n: number) => formatMoney(n, store.currency, store.locale);
 const ready = store.status !== "paused";
-const i18n = JSON.stringify(clientMessages(lang, ["checkout.review_cart", "checkout.network_error", "checkout.failed", "checkout.choose_district"])).replace(/</g, "\\u003c");
+const i18n = JSON.stringify(
+	clientMessages(lang, ["checkout.review_cart", "checkout.network_error", "checkout.failed", "checkout.choose_district"]),
+).replace(/</g, "\\u003c");
 ---
 
 <Base title={t("checkout.title")}>
 	<h1>{t("checkout.title")}</h1>
 	<script type="application/json" id="i18n" set:html={i18n} />
 	{!ready && <p class="cd-alert">{t("checkout.closed")}</p>}
-	<div id="empty" hidden>{t("checkout.empty")}<a href="/products">{t("cart.browse")}</a></div>
+	<div id="empty" hidden>
+		{t("checkout.empty")}
+		<a href="/products">{t("cart.browse")}</a>
+	</div>
 	<div class="cd-split wide-left" id="checkout" hidden={!ready}>
 		<form id="checkout-form" novalidate>
 			<div id="form-error" class="cd-alert" role="alert" hidden></div>
-			<div class="cd-field"><label for="name">{t("checkout.name")}</label><input id="name" name="name" autocomplete="name" required minlength="2" maxlength="100" /><div class="cd-error" data-err="name"></div></div>
-			<div class="cd-field"><label for="phone">{t("checkout.phone")}</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="01XXXXXXXXX" /><div class="cd-error" data-err="phone"></div></div>
-			<div class="cd-field"><label for="email">{t("checkout.email")}</label><input id="email" name="email" type="email" autocomplete="email" maxlength="120" /><div class="cd-error" data-err="email"></div></div>
+			<div class="cd-field">
+				<label for="name">{t("checkout.name")}</label>
+				<input id="name" name="name" autocomplete="name" required minlength="2" maxlength="100" />
+				<div class="cd-error" data-err="name"></div>
+			</div>
+			<div class="cd-field">
+				<label for="phone">{t("checkout.phone")}</label>
+				<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="01XXXXXXXXX" />
+				<div class="cd-error" data-err="phone"></div>
+			</div>
+			<div class="cd-field">
+				<label for="email">{t("checkout.email")}</label>
+				<input id="email" name="email" type="email" autocomplete="email" maxlength="120" />
+				<div class="cd-error" data-err="email"></div>
+			</div>
 			<div class="cd-field">
 				<label for="district">{t("checkout.district")}</label>
 				<select id="district" name="district" required>
 					<option value="">{t("checkout.choose")}</option>
-					{DISTRICTS.map((d) => <option value={d}>{d}</option>)}
+					{DISTRICTS.map((d) => (
+						<option value={d}>{d}</option>
+					))}
 				</select>
 				<div class="cd-error" data-err="district"></div>
 			</div>
-			<div class="cd-field"><label for="area">{t("checkout.area")}</label><input id="area" name="area" required maxlength="100" /><div class="cd-error" data-err="area"></div></div>
-			<div class="cd-field"><label for="address">{t("checkout.address")}</label><textarea id="address" name="address" rows="3" required minlength="5" maxlength="200" autocomplete="street-address"></textarea><div class="cd-error" data-err="address"></div></div>
-			<div class="cd-field"><label for="note">{t("checkout.note")}</label><textarea id="note" name="note" rows="2" maxlength="500"></textarea></div>
-			<p class="cd-muted">{t("checkout.payment", { inside: fee(store.delivery_inside_dhaka_minor), outside: fee(store.delivery_outside_dhaka_minor) })}</p>
-			<button class="cd-btn" id="place" type="submit">{t("checkout.place")}</button>
+			<div class="cd-field">
+				<label for="area">{t("checkout.area")}</label>
+				<input id="area" name="area" required maxlength="100" />
+				<div class="cd-error" data-err="area"></div>
+			</div>
+			<div class="cd-field">
+				<label for="address">{t("checkout.address")}</label>
+				<textarea id="address" name="address" rows="3" required minlength="5" maxlength="200" autocomplete="street-address"></textarea>
+				<div class="cd-error" data-err="address"></div>
+			</div>
+			<div class="cd-field">
+				<label for="note">{t("checkout.note")}</label>
+				<textarea id="note" name="note" rows="2" maxlength="500"></textarea>
+			</div>
+			<p class="cd-muted">
+				{t("checkout.payment", { inside: fee(store.delivery_inside_dhaka_minor), outside: fee(store.delivery_outside_dhaka_minor) })}
+			</p>
+			<button class="cd-btn" id="place" type="submit">
+				{t("checkout.place")}
+			</button>
 		</form>
 		<aside aria-labelledby="sum-h">
 			<h2 id="sum-h">{t("checkout.summary")}</h2>
-			<table class="cd-table"><tbody id="summary"></tbody></table>
-			<p>{t("checkout.subtotal")}: <span id="sub"></span></p>
-			<p>{t("checkout.delivery")}: <span id="del">{t("checkout.choose_district")}</span></p>
-			<p id="disc-row" hidden>{t("checkout.discount")}: <span id="disc"></span></p>
-			<p><strong>{t("checkout.total")}: <span id="tot"></span></strong></p>
+			<table class="cd-table">
+				<tbody id="summary"></tbody>
+			</table>
+			<p>
+				{t("checkout.subtotal")}: <span id="sub"></span>
+			</p>
+			<p>
+				{t("checkout.delivery")}: <span id="del">{t("checkout.choose_district")}</span>
+			</p>
+			<p id="disc-row" hidden>
+				{t("checkout.discount")}: <span id="disc"></span>
+			</p>
+			<p>
+				<strong>
+					{t("checkout.total")}: <span id="tot"></span>
+				</strong>
+			</p>
 		</aside>
 	</div>
 </Base>

@@ -11,13 +11,23 @@ const data = JSON.stringify(categories).replace(/</g, "\\u003c");
 	<script type="application/json" id="cat-data" set:html={data} />
 	<div class="scroll">
 		<table id="cat-table">
-			<thead><tr><th>Name</th><th>Slug</th><th>Order</th><th></th></tr></thead>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Slug</th>
+					<th>Order</th>
+					<th></th>
+				</tr>
+			</thead>
 			<tbody></tbody>
 		</table>
 	</div>
 	<h2>Add category</h2>
 	<form id="cat-form" class="row">
-		<div><label for="cn">Name</label><input id="cn" type="text" required maxlength="100" /></div>
+		<div>
+			<label for="cn">Name</label>
+			<input id="cn" type="text" required maxlength="100" />
+		</div>
 		<button type="submit">Add</button>
 	</form>
 </AdminLayout>

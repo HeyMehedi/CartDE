@@ -10,7 +10,10 @@ export default [
 	{
 		rules: {
 			// Unused values prefixed with "_" are intentional (destructuring to drop a field).
-			"@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" }],
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{ argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" },
+			],
 		},
 	},
 	{

@@ -11,7 +11,9 @@ const enabledSchema = z.object({ enabled: z.array(z.string()).max(50).default([]
 const TTL_MS = 15_000;
 
 let cache: { at: number; runtime: ExtensionRuntime; activeIds: string[] } | null = null;
-export const resetExtensionCache = () => { cache = null; };
+export const resetExtensionCache = () => {
+	cache = null;
+};
 
 export const registry = (extensions: readonly Extension[] = EXTENSIONS) => buildRegistry(extensions);
 
@@ -34,7 +36,11 @@ export async function setEnabledIds(db: D1Database, ids: string[], extensions: r
 export async function extensionRuntime(db: D1Database, extensions: readonly Extension[] = EXTENSIONS): Promise<ExtensionRuntime> {
 	if (extensions === EXTENSIONS && cache && Date.now() - cache.at < TTL_MS) return cache.runtime;
 	let ids: string[] = [];
-	try { ids = await getEnabledIds(db); } catch { /* settings table not migrated yet: run without extensions */ }
+	try {
+		ids = await getEnabledIds(db);
+	} catch {
+		/* settings table not migrated yet: run without extensions */
+	}
 	const active = registry(extensions).available.filter((e) => ids.includes(e.id));
 	const runtime = createRuntime(active);
 	if (extensions === EXTENSIONS) cache = { at: Date.now(), runtime, activeIds: active.map((e) => e.id) };

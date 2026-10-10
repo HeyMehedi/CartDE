@@ -18,24 +18,15 @@ interface Props {
 	content?: { collection: string; id: string; slug?: string | null };
 }
 
-const { title, pageTitle, description, image, canonical, content } =
-	Astro.props;
-const [settingsResult, menuResult] = await Promise.all([
-	getSiteSettingsWithCacheHint(),
-	getMenuWithCacheHint("primary"),
-]);
+const { title, pageTitle, description, image, canonical, content } = Astro.props;
+const [settingsResult, menuResult] = await Promise.all([getSiteSettingsWithCacheHint(), getMenuWithCacheHint("primary")]);
 if (Astro.cache?.enabled) {
 	Astro.cache.set(settingsResult.cacheHint);
 	Astro.cache.set(menuResult.cacheHint);
 }
 
-const { siteTitle, siteTagline, siteLogo } = resolveStarterSiteIdentity(
-	settingsResult.data,
-);
-const titleIncludesSiteName =
-	title === siteTitle ||
-	title.endsWith(` | ${siteTitle}`) ||
-	title.endsWith(` — ${siteTitle}`);
+const { siteTitle, siteTagline, siteLogo } = resolveStarterSiteIdentity(settingsResult.data);
+const titleIncludesSiteName = title === siteTitle || title.endsWith(` | ${siteTitle}`) || title.endsWith(` — ${siteTitle}`);
 const { theme, lang, t } = await storefrontContext();
 const baseTitle = titleIncludesSiteName ? title : `${title} — ${siteTitle}`;
 const fullTitle = theme.seo.title_suffix ? `${baseTitle} ${theme.seo.title_suffix}` : baseTitle;
@@ -69,40 +60,32 @@ const pageCtx = createPublicPageContext({
 	<body>
 		<EmDashBodyStart page={pageCtx} />
 
-		<a href="#main" class="cd-skip">Skip to content</a>
+		<a href="#main" class="cd-skip">
+			Skip to content
+		</a>
 		<header>
 			<nav>
 				<a href="/">
-					{
-						siteLogo ? (
-							<img
-								src={siteLogo.url}
-								alt={siteLogo.alt || siteTitle}
-								style="height:48px;width:auto;margin:-8px 0;display:block;"
-							/>
-						) : (
-							siteTitle
-						)
-					}
+					{siteLogo ? (
+						<img src={siteLogo.url} alt={siteLogo.alt || siteTitle} style="height:48px;width:auto;margin:-8px 0;display:block;" />
+					) : (
+						siteTitle
+					)}
 				</a>
-				{
-					menu?.items.map((item) => (
-						<a
-							href={item.url}
-							target={item.target}
-							rel={item.target === "_blank" ? "noopener noreferrer" : undefined}
-						>
-							{item.label}
-						</a>
-					))
-				}
+				{menu?.items.map((item) => (
+					<a href={item.url} target={item.target} rel={item.target === "_blank" ? "noopener noreferrer" : undefined}>
+						{item.label}
+					</a>
+				))}
 				<a href="/products">{t("nav.shop")}</a>
 				<form action="/search" method="get" role="search" class="cd-search">
 					<input type="search" name="q" maxlength="100" placeholder={t("nav.search")} aria-label={t("nav.search")} />
 					<button type="submit">{t("nav.search_button")}</button>
 				</form>
 				<LiveSearch placeholder="Search..." collections={["posts", "pages"]} />
-				<a href="/cart" class="cart-link">{t("nav.cart")} <span id="cart-count" aria-live="polite"></span></a>
+				<a href="/cart" class="cart-link">
+					{t("nav.cart")} <span id="cart-count" aria-live="polite"></span>
+				</a>
 			</nav>
 		</header>
 
@@ -112,13 +95,15 @@ const pageCtx = createPublicPageContext({
 
 		<footer class="cd-footer">
 			{theme.footer.text && <p>{theme.footer.text}</p>}
-			{
-				theme.footer.links.length > 0 && (
-					<ul class="cd-footer-links">
-						{theme.footer.links.map((l) => <li><a href={l.url}>{l.label}</a></li>)}
-					</ul>
-				)
-			}
+			{theme.footer.links.length > 0 && (
+				<ul class="cd-footer-links">
+					{theme.footer.links.map((l) => (
+						<li>
+							<a href={l.url}>{l.label}</a>
+						</li>
+					))}
+				</ul>
+			)}
 			<p class="cd-muted">{t("footer.powered")}</p>
 		</footer>
 

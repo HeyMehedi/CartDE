@@ -1,7 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createTestDb } from "../helpers/d1";
 import { createProduct, getProduct, updateProduct, updateVariant } from "../../src/cartde/db/products";
-import { getCustomerOrders, getOrder, getOrderForShopper, listCustomers, listOrders, overview, placeOrder, priceCart, setMerchantNote, transitionOrder } from "../../src/cartde/db/orders";
+import {
+	getCustomerOrders,
+	getOrder,
+	getOrderForShopper,
+	listCustomers,
+	listOrders,
+	overview,
+	placeOrder,
+	priceCart,
+	setMerchantNote,
+	transitionOrder,
+} from "../../src/cartde/db/orders";
 import { getStore, updateStore } from "../../src/cartde/db/store";
 import { checkoutInput, productInput } from "../../src/cartde/domain/schemas";
 import { ORDER_STATUSES, canTransition } from "../../src/cartde/domain/orders";
@@ -13,18 +24,44 @@ let variant2Id: string;
 async function seed(stock = 5) {
 	const p = await createProduct(
 		db,
-		productInput.parse({ name: "Tee", status: "active", options: [{ name: "Size", values: ["S", "M"] }], variants: [{ option_values: ["S"], price_minor: 90000, stock_qty: stock }, { option_values: ["M"], price_minor: 95000, stock_qty: 2 }] }),
+		productInput.parse({
+			name: "Tee",
+			status: "active",
+			options: [{ name: "Size", values: ["S", "M"] }],
+			variants: [
+				{ option_values: ["S"], price_minor: 90000, stock_qty: stock },
+				{ option_values: ["M"], price_minor: 95000, stock_qty: 2 },
+			],
+		}),
 	);
 	variantId = p.variants[0]!.id;
 	variant2Id = p.variants[1]!.id;
-	await updateStore(db, { name: "Shop", currency: "BDT", locale: "en-BD", timezone: "Asia/Dhaka", delivery_inside_dhaka_minor: 6000, delivery_outside_dhaka_minor: 12000, low_stock_threshold: 3 });
+	await updateStore(db, {
+		name: "Shop",
+		currency: "BDT",
+		locale: "en-BD",
+		timezone: "Asia/Dhaka",
+		delivery_inside_dhaka_minor: 6000,
+		delivery_outside_dhaka_minor: 12000,
+		low_stock_threshold: 3,
+	});
 }
 
 let n = 0;
 const checkout = (over: Record<string, unknown> = {}) =>
-	checkoutInput.parse({ idempotency_key: `key-${String(++n).padStart(16, "0")}`, name: "Rahim", phone: "01712345678", district: "Dhaka", area: "Mirpur", address: "House 5, Road 3", lines: [{ variant_id: variantId, quantity: 2 }], ...over });
+	checkoutInput.parse({
+		idempotency_key: `key-${String(++n).padStart(16, "0")}`,
+		name: "Rahim",
+		phone: "01712345678",
+		district: "Dhaka",
+		area: "Mirpur",
+		address: "House 5, Road 3",
+		lines: [{ variant_id: variantId, quantity: 2 }],
+		...over,
+	});
 
-const stockOf = async (id: string) => (await db.prepare(`SELECT stock_qty FROM cartde_variants WHERE id = ?1`).bind(id).first<{ stock_qty: number }>())!.stock_qty;
+const stockOf = async (id: string) =>
+	(await db.prepare(`SELECT stock_qty FROM cartde_variants WHERE id = ?1`).bind(id).first<{ stock_qty: number }>())!.stock_qty;
 
 beforeEach(async () => {
 	db = createTestDb();
@@ -37,12 +74,29 @@ describe("placeOrder", () => {
 		const placed = await placeOrder(db, checkout());
 		expect(placed.order_number).toBe(1001);
 		const order = await getOrder(db, (await db.prepare(`SELECT id FROM cartde_orders`).first<{ id: string }>())!.id);
-		expect(order).toMatchObject({ status: "pending", payment_status: "unpaid", subtotal_minor: 180000, delivery_minor: 6000, total_minor: 186000, customer_name: "Rahim", ship_district: "Dhaka" });
+		expect(order).toMatchObject({
+			status: "pending",
+			payment_status: "unpaid",
+			subtotal_minor: 180000,
+			delivery_minor: 6000,
+			total_minor: 186000,
+			customer_name: "Rahim",
+			ship_district: "Dhaka",
+		});
 		expect(order.items).toHaveLength(1);
-		expect(order.items[0]).toMatchObject({ product_name: "Tee", variant_title: "S", quantity: 2, unit_price_minor: 90000, line_total_minor: 180000 });
+		expect(order.items[0]).toMatchObject({
+			product_name: "Tee",
+			variant_title: "S",
+			quantity: 2,
+			unit_price_minor: 90000,
+			line_total_minor: 180000,
+		});
 		expect(order.events.map((e) => e.to_status)).toEqual(["pending"]);
 		expect(await stockOf(variantId)).toBe(3);
-		const inv = await db.prepare(`SELECT SUM(delta) AS s FROM cartde_inventory_events WHERE variant_id = ?1`).bind(variantId).first<{ s: number }>();
+		const inv = await db
+			.prepare(`SELECT SUM(delta) AS s FROM cartde_inventory_events WHERE variant_id = ?1`)
+			.bind(variantId)
+			.first<{ s: number }>();
 		expect(inv!.s).toBe(3); // initial 5 - 2
 		expect((await listCustomers(db))[0]).toMatchObject({ phone: "01712345678", order_count: 1 });
 	});
@@ -75,7 +129,9 @@ describe("placeOrder", () => {
 
 	it("selling the last unit twice yields exactly one order", async () => {
 		await db.prepare(`UPDATE cartde_variants SET stock_qty = 1 WHERE id = ?1`).bind(variantId).run();
-		const attempts = await Promise.allSettled([1, 2, 3].map(() => placeOrder(db, checkout({ lines: [{ variant_id: variantId, quantity: 1 }] }))));
+		const attempts = await Promise.allSettled(
+			[1, 2, 3].map(() => placeOrder(db, checkout({ lines: [{ variant_id: variantId, quantity: 1 }] }))),
+		);
 		expect(attempts.filter((a) => a.status === "fulfilled")).toHaveLength(1);
 		expect(attempts.filter((a) => a.status === "rejected")).toHaveLength(2);
 		expect(await stockOf(variantId)).toBe(0);
@@ -83,7 +139,17 @@ describe("placeOrder", () => {
 	});
 
 	it("rolls everything back when one line is unavailable", async () => {
-		await expect(placeOrder(db, checkout({ lines: [{ variant_id: variantId, quantity: 1 }, { variant_id: variant2Id, quantity: 3 }] }))).rejects.toMatchObject({ code: "conflict" });
+		await expect(
+			placeOrder(
+				db,
+				checkout({
+					lines: [
+						{ variant_id: variantId, quantity: 1 },
+						{ variant_id: variant2Id, quantity: 3 },
+					],
+				}),
+			),
+		).rejects.toMatchObject({ code: "conflict" });
 		expect(await stockOf(variantId)).toBe(5);
 		expect(await stockOf(variant2Id)).toBe(2);
 		expect((await listOrders(db)).total).toBe(0);
@@ -110,9 +176,16 @@ describe("placeOrder", () => {
 
 	it("refuses inactive, unknown and unpublished items, and a paused store", async () => {
 		await updateVariant(db, variant2Id, { status: "inactive" });
-		await expect(placeOrder(db, checkout({ lines: [{ variant_id: variant2Id, quantity: 1 }] }))).rejects.toMatchObject({ code: "conflict" });
-		await expect(placeOrder(db, checkout({ lines: [{ variant_id: "Z".repeat(26), quantity: 1 }] }))).rejects.toMatchObject({ code: "conflict" });
-		const prod = await getProduct(db, (await db.prepare(`SELECT product_id FROM cartde_variants WHERE id=?1`).bind(variantId).first<{ product_id: string }>())!.product_id);
+		await expect(placeOrder(db, checkout({ lines: [{ variant_id: variant2Id, quantity: 1 }] }))).rejects.toMatchObject({
+			code: "conflict",
+		});
+		await expect(placeOrder(db, checkout({ lines: [{ variant_id: "Z".repeat(26), quantity: 1 }] }))).rejects.toMatchObject({
+			code: "conflict",
+		});
+		const prod = await getProduct(
+			db,
+			(await db.prepare(`SELECT product_id FROM cartde_variants WHERE id=?1`).bind(variantId).first<{ product_id: string }>())!.product_id,
+		);
 		await updateProduct(db, prod.id, { status: "archived" });
 		await expect(placeOrder(db, checkout())).rejects.toMatchObject({ code: "conflict" });
 		await updateProduct(db, prod.id, { status: "active" });
@@ -121,7 +194,10 @@ describe("placeOrder", () => {
 	});
 
 	it("prices carts from the database and flags problems", async () => {
-		const lines = await priceCart(db, [{ variant_id: variantId, quantity: 9 }, { variant_id: variant2Id, quantity: 1 }]);
+		const lines = await priceCart(db, [
+			{ variant_id: variantId, quantity: 9 },
+			{ variant_id: variant2Id, quantity: 1 },
+		]);
 		expect(lines[0]).toMatchObject({ available: false, problem: "Only 5 left." });
 		expect(lines[1]).toMatchObject({ available: true, line_total_minor: 95000 });
 	});
@@ -170,7 +246,10 @@ describe("transitions", () => {
 		const id = await fresh();
 		await transitionOrder(db, id, { to: "cancelled" }, "u1");
 		expect(await stockOf(variantId)).toBe(5);
-		const sum = await db.prepare(`SELECT SUM(delta) AS s FROM cartde_inventory_events WHERE variant_id = ?1`).bind(variantId).first<{ s: number }>();
+		const sum = await db
+			.prepare(`SELECT SUM(delta) AS s FROM cartde_inventory_events WHERE variant_id = ?1`)
+			.bind(variantId)
+			.first<{ s: number }>();
 		expect(sum!.s).toBe(5);
 	});
 
@@ -243,8 +322,12 @@ describe("listing and overview", () => {
 describe("database constraints back the invariants", () => {
 	it("rejects an order whose total does not add up", async () => {
 		await expect(
-			db.prepare(`INSERT INTO cartde_orders (id, order_number, access_token, currency, subtotal_minor, delivery_minor, total_minor, customer_name, customer_phone, ship_recipient_name, ship_phone, ship_line1, ship_area, ship_district, idempotency_key, placed_at, created_at, updated_at)
-			 VALUES ('x', 5, 't', 'BDT', 100, 10, 999, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'k', 'n', 'n', 'n')`).run(),
+			db
+				.prepare(
+					`INSERT INTO cartde_orders (id, order_number, access_token, currency, subtotal_minor, delivery_minor, total_minor, customer_name, customer_phone, ship_recipient_name, ship_phone, ship_line1, ship_area, ship_district, idempotency_key, placed_at, created_at, updated_at)
+			 VALUES ('x', 5, 't', 'BDT', 100, 10, 999, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'k', 'n', 'n', 'n')`,
+				)
+				.run(),
 		).rejects.toThrow();
 	});
 });

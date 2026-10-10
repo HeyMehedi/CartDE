@@ -14,7 +14,11 @@ const freeDelivery: Extension = {
 	cartdeApi: EXTENSION_API_VERSION,
 	hooks: {
 		adjustDelivery: (ctx) => (ctx.subtotal_minor >= THRESHOLD_MINOR ? 0 : ctx.delivery_minor),
-		storefrontSection: () => ({ title: "Free delivery", body: "Orders over 5,000 ship free anywhere in Bangladesh.", items: [{ label: "Shop now", url: "/products" }] }),
+		storefrontSection: () => ({
+			title: "Free delivery",
+			body: "Orders over 5,000 ship free anywhere in Bangladesh.",
+			items: [{ label: "Shop now", url: "/products" }],
+		}),
 		onOrderEvent: (event) => {
 			// Order events carry no customer details, so they are safe to log.
 			console.info("free-delivery saw", event.type, `#${event.order_number}`, event.status);

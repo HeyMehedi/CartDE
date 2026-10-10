@@ -9,18 +9,53 @@ let db: D1Database;
 let variantId: string;
 beforeEach(async () => {
 	db = createTestDb();
-	await completeSetup(db, setupInput.parse({ name: "Shop", currency: "BDT", locale: "en-BD", timezone: "Asia/Dhaka", delivery_inside_dhaka_minor: 6000, delivery_outside_dhaka_minor: 12000, low_stock_threshold: 3 }));
-	const p = await createProduct(db, productInput.parse({ name: "Tee", status: "active", options: [{ name: "Size", values: ["S", "M"] }], variants: [{ option_values: ["S"], price_minor: 100000, stock_qty: 10 }, { option_values: ["M"], price_minor: 100000, stock_qty: 2 }] }));
+	await completeSetup(
+		db,
+		setupInput.parse({
+			name: "Shop",
+			currency: "BDT",
+			locale: "en-BD",
+			timezone: "Asia/Dhaka",
+			delivery_inside_dhaka_minor: 6000,
+			delivery_outside_dhaka_minor: 12000,
+			low_stock_threshold: 3,
+		}),
+	);
+	const p = await createProduct(
+		db,
+		productInput.parse({
+			name: "Tee",
+			status: "active",
+			options: [{ name: "Size", values: ["S", "M"] }],
+			variants: [
+				{ option_values: ["S"], price_minor: 100000, stock_qty: 10 },
+				{ option_values: ["M"], price_minor: 100000, stock_qty: 2 },
+			],
+		}),
+	);
 	variantId = p.variants[0]!.id;
 });
 
-const order = (n: number) => placeOrder(db, checkoutInput.parse({ idempotency_key: `ov-key-${String(n).padStart(16, "0")}`, name: "Rahim", phone: "01712345678", district: "Dhaka", area: "A", address: "House 5", lines: [{ variant_id: variantId, quantity: 1 }] }));
+const order = (n: number) =>
+	placeOrder(
+		db,
+		checkoutInput.parse({
+			idempotency_key: `ov-key-${String(n).padStart(16, "0")}`,
+			name: "Rahim",
+			phone: "01712345678",
+			district: "Dhaka",
+			area: "A",
+			address: "House 5",
+			lines: [{ variant_id: variantId, quantity: 1 }],
+		}),
+	);
 
 describe("overview data", () => {
 	it("groups sales by store-local day, includes empty days, excludes cancelled revenue", async () => {
 		await order(1);
 		const second = await order(2);
-		const id = (await db.prepare(`SELECT id FROM cartde_orders WHERE order_number = ?1`).bind(second.order_number).first<{ id: string }>())!.id;
+		const id = (await db.prepare(`SELECT id FROM cartde_orders WHERE order_number = ?1`).bind(second.order_number).first<{ id: string }>())!
+			.id;
 		await transitionOrder(db, id, { to: "cancelled" }, null);
 		// Pretend the first order was placed at 23:30 UTC yesterday, which is already today in Dhaka (UTC+6).
 		const now = new Date("2026-10-10T12:00:00Z");

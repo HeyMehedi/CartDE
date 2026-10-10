@@ -13,10 +13,7 @@ export function variantTitle(values: readonly string[]): string {
 
 /** Cartesian product of option values, in option order. No options yields one empty combination. */
 export function variantCombinations(options: readonly OptionInput[]): string[][] {
-	return options.reduce<string[][]>(
-		(acc, option) => acc.flatMap((combo) => option.values.map((value) => [...combo, value])),
-		[[]],
-	);
+	return options.reduce<string[][]>((acc, option) => acc.flatMap((combo) => option.values.map((value) => [...combo, value])), [[]]);
 }
 
 export function validateOptions(options: readonly OptionInput[]): string[] {

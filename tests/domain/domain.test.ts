@@ -39,7 +39,12 @@ describe("slug", () => {
 describe("variants", () => {
 	it("builds combinations", () => {
 		expect(variantCombinations([])).toEqual([[]]);
-		expect(variantCombinations([{ name: "Size", values: ["S", "M"] }, { name: "Colour", values: ["Red"] }])).toEqual([
+		expect(
+			variantCombinations([
+				{ name: "Size", values: ["S", "M"] },
+				{ name: "Colour", values: ["Red"] },
+			]),
+		).toEqual([
 			["S", "Red"],
 			["M", "Red"],
 		]);
@@ -48,9 +53,13 @@ describe("variants", () => {
 	});
 	it("validates options", () => {
 		expect(validateOptions([{ name: "Size", values: ["S", "s"] }])).toHaveLength(1);
-		expect(validateOptions([{ name: "A", values: ["1"] }, { name: "a", values: ["1"] }])).toHaveLength(1);
-		const mk = (names: string[], n: number) =>
-			names.map((name) => ({ name, values: Array.from({ length: n }, (_, i) => String(i)) }));
+		expect(
+			validateOptions([
+				{ name: "A", values: ["1"] },
+				{ name: "a", values: ["1"] },
+			]),
+		).toHaveLength(1);
+		const mk = (names: string[], n: number) => names.map((name) => ({ name, values: Array.from({ length: n }, (_, i) => String(i)) }));
 		expect(validateOptions(mk(["a", "b", "c"], 4))).toEqual([]); // 64 variants
 		expect(validateOptions(mk(["a", "b", "c"], 5))).not.toEqual([]); // 125 > 100
 		expect(validateOptions(mk(["a", "b", "c", "d"], 1))).not.toEqual([]); // 4 options

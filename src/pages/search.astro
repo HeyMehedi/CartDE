@@ -25,25 +25,33 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
 	{!q && <p class="cd-muted">{t("search.prompt")}</p>}
 	{q && result.items.length === 0 && <p class="cd-muted">{t("search.none")}</p>}
 	<ul class="cd-grid">
-		{
-			result.items.map((p) => (
-				<li class="cd-card">
-					<a href={`/products/${p.slug}`}>
-						{p.featured_media_id && urls.get(p.featured_media_id) ? <img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" /> : <div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />}
-						<div>{p.name}</div>
-						<div class="cd-price">{formatMoney(p.price_minor, store.currency, store.locale)}</div>
-					</a>
-				</li>
-			))
-		}
+		{result.items.map((p) => (
+			<li class="cd-card">
+				<a href={`/products/${p.slug}`}>
+					{p.featured_media_id && urls.get(p.featured_media_id) ? (
+						<img src={urls.get(p.featured_media_id)} alt="" loading="lazy" width="400" height="400" />
+					) : (
+						<div style="aspect-ratio:1;background:var(--cd-line);border-radius:var(--cd-radius)" />
+					)}
+					<div>{p.name}</div>
+					<div class="cd-price">{formatMoney(p.price_minor, store.currency, store.locale)}</div>
+				</a>
+			</li>
+		))}
 	</ul>
-	{
-		pages > 1 && (
-			<nav class="cd-pager" aria-label="Pagination">
-				{page > 1 && <a href={href(page - 1)} rel="prev">{t("products.newer")}</a>}
-				<span>{t("products.page_of", { page, pages })}</span>
-				{page < pages && <a href={href(page + 1)} rel="next">{t("products.older")}</a>}
-			</nav>
-		)
-	}
+	{pages > 1 && (
+		<nav class="cd-pager" aria-label="Pagination">
+			{page > 1 && (
+				<a href={href(page - 1)} rel="prev">
+					{t("products.newer")}
+				</a>
+			)}
+			<span>{t("products.page_of", { page, pages })}</span>
+			{page < pages && (
+				<a href={href(page + 1)} rel="next">
+					{t("products.older")}
+				</a>
+			)}
+		</nav>
+	)}
 </Base>

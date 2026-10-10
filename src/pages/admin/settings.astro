@@ -14,20 +14,39 @@ const f = (n: number) => (n / 100).toFixed(2);
 		<label for="name">Store name</label>
 		<input id="name" type="text" required maxlength="100" value={store.name} />
 		<div class="row">
-			<div><label for="currency">Currency (ISO code)</label><input id="currency" type="text" maxlength="3" size="4" value={store.currency} /></div>
-			<div><label for="locale">Locale</label><input id="locale" type="text" value={store.locale} /></div>
-			<div><label for="timezone">Time zone</label><input id="timezone" type="text" value={store.timezone} /></div>
+			<div>
+				<label for="currency">Currency (ISO code)</label>
+				<input id="currency" type="text" maxlength="3" size="4" value={store.currency} />
+			</div>
+			<div>
+				<label for="locale">Locale</label>
+				<input id="locale" type="text" value={store.locale} />
+			</div>
+			<div>
+				<label for="timezone">Time zone</label>
+				<input id="timezone" type="text" value={store.timezone} />
+			</div>
 		</div>
 		<div class="row">
-			<div><label for="contact_phone">Contact phone</label><input id="contact_phone" type="text" value={store.contact_phone ?? ""} /></div>
-			<div><label for="contact_email">Contact email</label><input id="contact_email" type="email" value={store.contact_email ?? ""} /></div>
+			<div>
+				<label for="contact_phone">Contact phone</label>
+				<input id="contact_phone" type="text" value={store.contact_phone ?? ""} />
+			</div>
+			<div>
+				<label for="contact_email">Contact email</label>
+				<input id="contact_email" type="email" value={store.contact_email ?? ""} />
+			</div>
 		</div>
 		<div class="row">
 			<div>
 				<label for="status">Store status</label>
 				<select id="status">
-					<option value="active" selected={store.status !== "paused"}>Open</option>
-					<option value="paused" selected={store.status === "paused"}>Paused (no new orders)</option>
+					<option value="active" selected={store.status !== "paused"}>
+						Open
+					</option>
+					<option value="paused" selected={store.status === "paused"}>
+						Paused (no new orders)
+					</option>
 				</select>
 			</div>
 		</div>
@@ -36,9 +55,18 @@ const f = (n: number) => (n / 100).toFixed(2);
 		<fieldset>
 			<legend>Delivery charge ({store.currency})</legend>
 			<div class="row">
-				<div><label for="inside">Inside Dhaka</label><input id="inside" type="text" inputmode="decimal" value={f(store.delivery_inside_dhaka_minor)} /></div>
-				<div><label for="outside">Outside Dhaka</label><input id="outside" type="text" inputmode="decimal" value={f(store.delivery_outside_dhaka_minor)} /></div>
-				<div><label for="low">Low-stock threshold</label><input id="low" type="text" inputmode="numeric" value={String(store.low_stock_threshold)} /></div>
+				<div>
+					<label for="inside">Inside Dhaka</label>
+					<input id="inside" type="text" inputmode="decimal" value={f(store.delivery_inside_dhaka_minor)} />
+				</div>
+				<div>
+					<label for="outside">Outside Dhaka</label>
+					<input id="outside" type="text" inputmode="decimal" value={f(store.delivery_outside_dhaka_minor)} />
+				</div>
+				<div>
+					<label for="low">Low-stock threshold</label>
+					<input id="low" type="text" inputmode="numeric" value={String(store.low_stock_threshold)} />
+				</div>
 			</div>
 		</fieldset>
 		<button type="submit">Save settings</button>

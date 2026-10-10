@@ -2,7 +2,10 @@
 // Browser-only helper (see product-editor.ts for why type checking is off).
 /** Browser-side helper for the admin pages. Sends the CSRF header the guard requires. */
 export class ApiError extends Error {
-	constructor(message: string, public fields: Record<string, string> = {}) {
+	constructor(
+		message: string,
+		public fields: Record<string, string> = {},
+	) {
 		super(message);
 	}
 }
@@ -23,6 +26,8 @@ export const $$ = <T extends HTMLElement = HTMLElement>(sel: string, root: Paren
 
 export function showError(el: HTMLElement, err: unknown) {
 	const fields = err instanceof ApiError ? Object.entries(err.fields) : [];
-	el.textContent = (err instanceof Error ? err.message : "Something went wrong.") + (fields.length ? " " + fields.map(([k, v]) => `${k}: ${v}`).join("; ") : "");
+	el.textContent =
+		(err instanceof Error ? err.message : "Something went wrong.") +
+		(fields.length ? " " + fields.map(([k, v]) => `${k}: ${v}`).join("; ") : "");
 	el.hidden = false;
 }

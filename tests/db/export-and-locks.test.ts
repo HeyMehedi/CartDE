@@ -8,7 +8,17 @@ import { completeSetup } from "../../src/cartde/db/setup";
 import { checkoutInput, productInput, setupInput } from "../../src/cartde/domain/schemas";
 
 let db: D1Database;
-const settings = (over: Record<string, unknown> = {}) => setupInput.parse({ name: "Shop", currency: "BDT", locale: "en-BD", timezone: "Asia/Dhaka", delivery_inside_dhaka_minor: 6000, delivery_outside_dhaka_minor: 12000, low_stock_threshold: 3, ...over });
+const settings = (over: Record<string, unknown> = {}) =>
+	setupInput.parse({
+		name: "Shop",
+		currency: "BDT",
+		locale: "en-BD",
+		timezone: "Asia/Dhaka",
+		delivery_inside_dhaka_minor: 6000,
+		delivery_outside_dhaka_minor: 12000,
+		low_stock_threshold: 3,
+		...over,
+	});
 
 beforeEach(async () => {
 	db = createTestDb();
@@ -16,8 +26,26 @@ beforeEach(async () => {
 });
 
 async function sell() {
-	const p = await createProduct(db, productInput.parse({ name: "Tee, \"classic\"", status: "active", variants: [{ price_minor: 90050, stock_qty: 5, sku: "=HYPERLINK(1)" }] }));
-	await placeOrder(db, checkoutInput.parse({ idempotency_key: "csv-key-0000000000001", name: "=cmd|' /C calc'!A0", phone: "01712345678", district: "Dhaka", area: "Mirpur", address: "House 5, Road 3\nFlat 2", lines: [{ variant_id: p.variants[0]!.id, quantity: 1 }] }));
+	const p = await createProduct(
+		db,
+		productInput.parse({
+			name: 'Tee, "classic"',
+			status: "active",
+			variants: [{ price_minor: 90050, stock_qty: 5, sku: "=HYPERLINK(1)" }],
+		}),
+	);
+	await placeOrder(
+		db,
+		checkoutInput.parse({
+			idempotency_key: "csv-key-0000000000001",
+			name: "=cmd|' /C calc'!A0",
+			phone: "01712345678",
+			district: "Dhaka",
+			area: "Mirpur",
+			address: "House 5, Road 3\nFlat 2",
+			lines: [{ variant_id: p.variants[0]!.id, quantity: 1 }],
+		}),
+	);
 	return p;
 }
 

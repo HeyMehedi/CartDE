@@ -25,41 +25,144 @@ const links = [
 		<meta name="robots" content="noindex" />
 		<title>{title} · CartDE admin</title>
 		<style is:global>
-			:root { color-scheme: light dark; --line: color-mix(in srgb, currentColor 18%, transparent); }
-			body { font: 15px/1.5 system-ui, sans-serif; margin: 0; }
-			.admin-bar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
-			.admin-bar a { text-decoration: none; }
-			.admin-bar a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
-			.admin-bar .grow { flex: 1; }
-			main.admin { max-width: 62rem; margin: 0 auto; padding: 1rem; }
-			.admin h1 { font-size: 1.4rem; margin: .5rem 0 1rem; }
-			.admin table { width: 100%; border-collapse: collapse; }
-			.admin th, .admin td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
-			.admin label { display: block; margin: .6rem 0 .2rem; font-weight: 600; }
-			.admin input, .admin select, .admin textarea { font: inherit; padding: .35rem .5rem; max-width: 100%; box-sizing: border-box; }
-			.admin input[type="text"], .admin textarea, .admin input[type="email"] { width: 100%; }
-			.admin table input { width: 8rem; }
-			.admin button, .admin .btn { font: inherit; padding: .4rem .8rem; cursor: pointer; }
-			.admin .row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
-			.admin .error { border: 1px solid #b00020; color: #b00020; padding: .5rem; margin: .75rem 0; }
-			.admin .ok { border: 1px solid #1b7f3b; color: #1b7f3b; padding: .5rem; margin: .75rem 0; }
-			.admin .muted { opacity: .7; }
-			.admin fieldset { border: 1px solid var(--line); margin: 1rem 0; }
-			.admin .scroll { overflow-x: auto; }
-			.admin .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; }
-			.admin .card { border: 1px solid var(--line); padding: .75rem 1rem; }
-			.admin .card strong { display: block; font-size: 1.8rem; }
-			@media print { .admin-bar, .no-print { display: none !important; } }
+			:root {
+				color-scheme: light dark;
+				--line: color-mix(in srgb, currentColor 18%, transparent);
+			}
+			body {
+				font:
+					15px/1.5 system-ui,
+					sans-serif;
+				margin: 0;
+			}
+			.admin-bar {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 1rem;
+				align-items: center;
+				padding: 0.6rem 1rem;
+				border-bottom: 1px solid var(--line);
+			}
+			.admin-bar a {
+				text-decoration: none;
+			}
+			.admin-bar a[aria-current="page"] {
+				font-weight: 700;
+				text-decoration: underline;
+			}
+			.admin-bar .grow {
+				flex: 1;
+			}
+			main.admin {
+				max-width: 62rem;
+				margin: 0 auto;
+				padding: 1rem;
+			}
+			.admin h1 {
+				font-size: 1.4rem;
+				margin: 0.5rem 0 1rem;
+			}
+			.admin table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+			.admin th,
+			.admin td {
+				text-align: left;
+				padding: 0.4rem 0.5rem;
+				border-bottom: 1px solid var(--line);
+				vertical-align: middle;
+			}
+			.admin label {
+				display: block;
+				margin: 0.6rem 0 0.2rem;
+				font-weight: 600;
+			}
+			.admin input,
+			.admin select,
+			.admin textarea {
+				font: inherit;
+				padding: 0.35rem 0.5rem;
+				max-width: 100%;
+				box-sizing: border-box;
+			}
+			.admin input[type="text"],
+			.admin textarea,
+			.admin input[type="email"] {
+				width: 100%;
+			}
+			.admin table input {
+				width: 8rem;
+			}
+			.admin button,
+			.admin .btn {
+				font: inherit;
+				padding: 0.4rem 0.8rem;
+				cursor: pointer;
+			}
+			.admin .row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75rem;
+				align-items: end;
+			}
+			.admin .error {
+				border: 1px solid #b00020;
+				color: #b00020;
+				padding: 0.5rem;
+				margin: 0.75rem 0;
+			}
+			.admin .ok {
+				border: 1px solid #1b7f3b;
+				color: #1b7f3b;
+				padding: 0.5rem;
+				margin: 0.75rem 0;
+			}
+			.admin .muted {
+				opacity: 0.7;
+			}
+			.admin fieldset {
+				border: 1px solid var(--line);
+				margin: 1rem 0;
+			}
+			.admin .scroll {
+				overflow-x: auto;
+			}
+			.admin .cards {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+				gap: 1rem;
+			}
+			.admin .card {
+				border: 1px solid var(--line);
+				padding: 0.75rem 1rem;
+			}
+			.admin .card strong {
+				display: block;
+				font-size: 1.8rem;
+			}
+			@media print {
+				.admin-bar,
+				.no-print {
+					display: none !important;
+				}
+			}
 		</style>
 	</head>
 	<body>
 		<nav class="admin-bar" aria-label="CartDE admin">
 			<strong>CartDE</strong>
-			{links.map(([key, href, label]) => <a href={href} aria-current={active === key ? "page" : undefined}>{label}</a>)}
+			{links.map(([key, href, label]) => (
+				<a href={href} aria-current={active === key ? "page" : undefined}>
+					{label}
+				</a>
+			))}
 			<span class="grow"></span>
 			<a href="/products">View storefront</a>
 			<a href="/_emdash/admin">EmDash admin (media, pages, users)</a>
 		</nav>
-		<main class="admin"><slot /></main>
+		<main class="admin">
+			<slot />
+		</main>
 	</body>
 </html>

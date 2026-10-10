@@ -54,7 +54,7 @@ export function buildAdminBlocks(state: AdminPageState): { blocks: Block[] } {
 				type: "banner",
 				variant: "alert",
 				title: "Your store is not open yet",
-				description: "Finish store setup. Until then, shoppers see a \"store not ready\" page.",
+				description: 'Finish store setup. Until then, shoppers see a "store not ready" page.',
 			},
 			{ type: "actions", elements: [link(state.origin, "Finish store setup", "/setup", "primary")] },
 		);
@@ -73,7 +73,10 @@ export function buildAdminBlocks(state: AdminPageState): { blocks: Block[] } {
 	}
 
 	blocks.push(
-		{ type: "actions", elements: [link(state.origin, "Open commerce dashboard", "/admin", "primary"), link(state.origin, "View storefront", "/")] },
+		{
+			type: "actions",
+			elements: [link(state.origin, "Open commerce dashboard", "/admin", "primary"), link(state.origin, "View storefront", "/")],
+		},
 		{ type: "divider" },
 		{ type: "context", text: "CartDE's commerce screens open in a new tab. They use your EmDash sign-in and need the Admin role." },
 		{ type: "actions", elements: LINKS.map((l) => link(state.origin, l.label, l.path)) },

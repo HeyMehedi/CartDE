@@ -17,9 +17,28 @@ const { customer, orders } = data;
 
 <AdminLayout title={customer.name} active="customers">
 	<h1>{customer.name}</h1>
-	<p>{customer.phone}{customer.email && ` · ${customer.email}`}</p>
+	<p>
+		{customer.phone}
+		{customer.email && ` · ${customer.email}`}
+	</p>
 	<table>
-		<thead><tr><th>Order</th><th>Status</th><th>Total</th></tr></thead>
-		<tbody>{orders.map((o) => <tr><td><a href={`/admin/orders/${o.id}`}>#{o.order_number}</a></td><td>{o.status}</td><td>{formatMoney(o.total_minor, o.currency, store.locale)}</td></tr>)}</tbody>
+		<thead>
+			<tr>
+				<th>Order</th>
+				<th>Status</th>
+				<th>Total</th>
+			</tr>
+		</thead>
+		<tbody>
+			{orders.map((o) => (
+				<tr>
+					<td>
+						<a href={`/admin/orders/${o.id}`}>#{o.order_number}</a>
+					</td>
+					<td>{o.status}</td>
+					<td>{formatMoney(o.total_minor, o.currency, store.locale)}</td>
+				</tr>
+			))}
+		</tbody>
 	</table>
 </AdminLayout>

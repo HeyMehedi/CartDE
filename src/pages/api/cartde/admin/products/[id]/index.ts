@@ -3,7 +3,17 @@ import { deleteProduct, getProduct, updateProduct } from "../../../../../../cart
 import { productInput } from "../../../../../../cartde/domain/schemas";
 
 const patch = productInput
-	.pick({ name: true, slug: true, description_md: true, status: true, featured_media_id: true, seo_title: true, seo_description: true, category_ids: true, media: true })
+	.pick({
+		name: true,
+		slug: true,
+		description_md: true,
+		status: true,
+		featured_media_id: true,
+		seo_title: true,
+		seo_description: true,
+		category_ids: true,
+		media: true,
+	})
 	.partial()
 	.strict();
 

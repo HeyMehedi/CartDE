@@ -21,8 +21,15 @@ export async function exportProducts(db: D1Database): Promise<string> {
 			 FROM cartde_products p JOIN cartde_variants v ON v.product_id = p.id ORDER BY p.name, v.position`,
 		)
 		.all<Record<string, unknown> & { price_minor: number; compare_at_minor: number | null }>();
-	const rows = results.map((r) => ({ ...r, price: minorToMajor(r.price_minor), compare_at: r.compare_at_minor === null ? "" : minorToMajor(r.compare_at_minor) }));
-	return toCsv(["product_id", "name", "slug", "status", "variant_id", "variant", "sku", "price", "compare_at", "stock_qty", "variant_status"], rows);
+	const rows = results.map((r) => ({
+		...r,
+		price: minorToMajor(r.price_minor),
+		compare_at: r.compare_at_minor === null ? "" : minorToMajor(r.compare_at_minor),
+	}));
+	return toCsv(
+		["product_id", "name", "slug", "status", "variant_id", "variant", "sku", "price", "compare_at", "stock_qty", "variant_status"],
+		rows,
+	);
 }
 
 export async function exportOrders(db: D1Database): Promise<string> {
@@ -34,8 +41,36 @@ export async function exportOrders(db: D1Database): Promise<string> {
 			 FROM cartde_orders o ORDER BY order_number`,
 		)
 		.all<Record<string, unknown> & { subtotal_minor: number; delivery_minor: number; discount_minor: number; total_minor: number }>();
-	const rows = results.map((r) => ({ ...r, subtotal: minorToMajor(r.subtotal_minor), delivery: minorToMajor(r.delivery_minor), discount: minorToMajor(r.discount_minor), total: minorToMajor(r.total_minor) }));
-	return toCsv(["order_number", "placed_at", "status", "payment_status", "currency", "items", "subtotal", "delivery", "discount", "total", "customer_name", "customer_phone", "customer_email", "ship_line1", "ship_area", "ship_district", "customer_note", "merchant_note"], rows);
+	const rows = results.map((r) => ({
+		...r,
+		subtotal: minorToMajor(r.subtotal_minor),
+		delivery: minorToMajor(r.delivery_minor),
+		discount: minorToMajor(r.discount_minor),
+		total: minorToMajor(r.total_minor),
+	}));
+	return toCsv(
+		[
+			"order_number",
+			"placed_at",
+			"status",
+			"payment_status",
+			"currency",
+			"items",
+			"subtotal",
+			"delivery",
+			"discount",
+			"total",
+			"customer_name",
+			"customer_phone",
+			"customer_email",
+			"ship_line1",
+			"ship_area",
+			"ship_district",
+			"customer_note",
+			"merchant_note",
+		],
+		rows,
+	);
 }
 
 export async function exportCustomers(db: D1Database): Promise<string> {

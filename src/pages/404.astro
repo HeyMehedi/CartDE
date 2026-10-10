@@ -9,5 +9,12 @@ Astro.response.headers.set("X-Robots-Tag", "noindex");
 <Base title={t("notfound.title")}>
 	<h1>{t("notfound.title")}</h1>
 	<p>{t("notfound.body")}</p>
-	<p><a class="cd-btn" href="/products">{t("notfound.shop")}</a> <a class="cd-btn secondary" href="/">{t("notfound.home")}</a></p>
+	<p>
+		<a class="cd-btn" href="/products">
+			{t("notfound.shop")}
+		</a>{" "}
+		<a class="cd-btn secondary" href="/">
+			{t("notfound.home")}
+		</a>
+	</p>
 </Base>

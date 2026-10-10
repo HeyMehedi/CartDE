@@ -4,31 +4,64 @@ import { storefrontContext } from "../cartde/app/storefront";
 import { clientMessages } from "../cartde/i18n/messages";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 const { t, lang } = await storefrontContext();
-const i18n = JSON.stringify(clientMessages(lang, ["cart.empty", "cart.browse", "cart.load_error", "cart.remove", "cart.quantity_for"])).replace(/</g, "\\u003c");
+const i18n = JSON.stringify(
+	clientMessages(lang, ["cart.empty", "cart.browse", "cart.load_error", "cart.remove", "cart.quantity_for"]),
+).replace(/</g, "\\u003c");
 ---
 
 <Base title={t("cart.title")}>
 	<h1>{t("cart.title")}</h1>
 	<script type="application/json" id="i18n" set:html={i18n} />
-	<div id="cart-msg" role="status" class="cd-muted">{t("cart.loading")}</div>
+	<div id="cart-msg" role="status" class="cd-muted">
+		{t("cart.loading")}
+	</div>
 	<div id="cart-wrap" hidden>
 		<div style="overflow-x:auto">
 			<table class="cd-table">
-				<thead><tr><th>{t("cart.item")}</th><th>{t("cart.price")}</th><th>{t("cart.quantity")}</th><th>{t("cart.total")}</th><th><span class="sr-only">{t("cart.remove")}</span></th></tr></thead>
+				<thead>
+					<tr>
+						<th>{t("cart.item")}</th>
+						<th>{t("cart.price")}</th>
+						<th>{t("cart.quantity")}</th>
+						<th>{t("cart.total")}</th>
+						<th>
+							<span class="sr-only">{t("cart.remove")}</span>
+						</th>
+					</tr>
+				</thead>
 				<tbody id="cart-body"></tbody>
 			</table>
 		</div>
-		<p><strong>{t("cart.subtotal")}: <span id="subtotal"></span></strong></p>
+		<p>
+			<strong>
+				{t("cart.subtotal")}: <span id="subtotal"></span>
+			</strong>
+		</p>
 		<p class="cd-muted">{t("cart.delivery_note")}</p>
-		<p id="blocked" class="cd-alert" hidden>{t("cart.blocked")}</p>
-		<a id="checkout-link" class="cd-btn" href="/checkout">{t("cart.checkout")}</a>
-		<a class="cd-btn secondary" href="/products">{t("cart.continue")}</a>
+		<p id="blocked" class="cd-alert" hidden>
+			{t("cart.blocked")}
+		</p>
+		<a id="checkout-link" class="cd-btn" href="/checkout">
+			{t("cart.checkout")}
+		</a>
+		<a class="cd-btn secondary" href="/products">
+			{t("cart.continue")}
+		</a>
 	</div>
-	<noscript><p>{t("cart.needs_js")}</p></noscript>
+	<noscript>
+		<p>{t("cart.needs_js")}</p>
+	</noscript>
 </Base>
 
 <style is:global>
-	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
 </style>
 
 <script>

@@ -1,4 +1,14 @@
-import { EXTENSION_API_VERSION, HOOK_TIMEOUT_MS, MAX_DELIVERY_MINOR, type Extension, type ExtensionRuntime, type OrderEvent, type PricingContext, type SectionContext, type SectionData } from "./types";
+import {
+	EXTENSION_API_VERSION,
+	HOOK_TIMEOUT_MS,
+	MAX_DELIVERY_MINOR,
+	type Extension,
+	type ExtensionRuntime,
+	type OrderEvent,
+	type PricingContext,
+	type SectionContext,
+	type SectionData,
+} from "./types";
 
 const ID = /^[a-z][a-z0-9-]{1,40}$/;
 
@@ -16,7 +26,8 @@ export function buildRegistry(extensions: readonly Extension[]): RegistryResult 
 		const id = typeof ext?.id === "string" ? ext.id : "(unknown)";
 		if (!ID.test(id)) rejected.push({ id, reason: "id must be lowercase kebab-case (2-41 characters)" });
 		else if (seen.has(id)) rejected.push({ id, reason: "duplicate id" });
-		else if (ext.cartdeApi !== EXTENSION_API_VERSION) rejected.push({ id, reason: `built for extension API ${String(ext.cartdeApi)}, this CartDE provides ${EXTENSION_API_VERSION}` });
+		else if (ext.cartdeApi !== EXTENSION_API_VERSION)
+			rejected.push({ id, reason: `built for extension API ${String(ext.cartdeApi)}, this CartDE provides ${EXTENSION_API_VERSION}` });
 		else if (!ext.name || typeof ext.hooks !== "object" || ext.hooks === null) rejected.push({ id, reason: "missing name or hooks" });
 		else {
 			seen.add(id);
@@ -52,9 +63,16 @@ const isMinor = (n: unknown, max: number): n is number => typeof n === "number" 
 function cleanSection(raw: SectionData | null | undefined): SectionData | null {
 	if (!raw || typeof raw.title !== "string" || !raw.title.trim()) return null;
 	const items = (raw.items ?? [])
-		.filter((i) => typeof i?.label === "string" && typeof i?.url === "string" && (/^\/(?![/\\])/.test(i.url) || /^https?:\/\/[^\s]+$/i.test(i.url)))
+		.filter(
+			(i) =>
+				typeof i?.label === "string" && typeof i?.url === "string" && (/^\/(?![/\\])/.test(i.url) || /^https?:\/\/[^\s]+$/i.test(i.url)),
+		)
 		.slice(0, 12)
-		.map((i) => ({ label: i.label.slice(0, 80), url: i.url.slice(0, 300), ...(typeof i.note === "string" ? { note: i.note.slice(0, 120) } : {}) }));
+		.map((i) => ({
+			label: i.label.slice(0, 80),
+			url: i.url.slice(0, 300),
+			...(typeof i.note === "string" ? { note: i.note.slice(0, 120) } : {}),
+		}));
 	return { title: raw.title.trim().slice(0, 80), ...(typeof raw.body === "string" ? { body: raw.body.slice(0, 500) } : {}), items };
 }
 
@@ -68,7 +86,13 @@ export function createRuntime(active: readonly Extension[], opts: { log?: Logger
 			for (const ext of active) {
 				const hook = ext.hooks.adjustDelivery;
 				if (!hook) continue;
-				const out = await guarded(ext.id, "adjustDelivery", () => hook.call(ext.hooks, { ...ctx, delivery_minor: delivery }), log, timeoutMs);
+				const out = await guarded(
+					ext.id,
+					"adjustDelivery",
+					() => hook.call(ext.hooks, { ...ctx, delivery_minor: delivery }),
+					log,
+					timeoutMs,
+				);
 				if (out === undefined) continue;
 				if (!isMinor(out, MAX_DELIVERY_MINOR)) log(`${ext.id}.adjustDelivery ignored: ${String(out)} is not a valid delivery charge`);
 				else delivery = out;
@@ -87,7 +111,11 @@ export function createRuntime(active: readonly Extension[], opts: { log?: Logger
 
 		async emitOrderEvent(event: OrderEvent) {
 			await Promise.all(
-				active.flatMap((ext) => (ext.hooks.onOrderEvent ? [guarded(ext.id, "onOrderEvent", () => ext.hooks.onOrderEvent!.call(ext.hooks, Object.freeze({ ...event })), log, timeoutMs)] : [])),
+				active.flatMap((ext) =>
+					ext.hooks.onOrderEvent
+						? [guarded(ext.id, "onOrderEvent", () => ext.hooks.onOrderEvent!.call(ext.hooks, Object.freeze({ ...event })), log, timeoutMs)]
+						: [],
+				),
 			);
 		},
 

@@ -9,18 +9,28 @@ export function parseCsv(text: string): string[][] {
 		const c = src[i]!;
 		if (quoted) {
 			if (c === '"') {
-				if (src[i + 1] === '"') { field += '"'; i++; } else quoted = false;
+				if (src[i + 1] === '"') {
+					field += '"';
+					i++;
+				} else quoted = false;
 			} else field += c;
 		} else if (c === '"' && field === "") quoted = true;
-		else if (c === ",") { row.push(field); field = ""; }
-		else if (c === "\n" || c === "\r") {
+		else if (c === ",") {
+			row.push(field);
+			field = "";
+		} else if (c === "\n" || c === "\r") {
 			if (c === "\r" && src[i + 1] === "\n") i++;
-			row.push(field); field = "";
-			rows.push(row); row = [];
+			row.push(field);
+			field = "";
+			rows.push(row);
+			row = [];
 		} else field += c;
 	}
 	if (quoted) throw new Error("Unclosed quote in CSV.");
-	if (field !== "" || row.length) { row.push(field); rows.push(row); }
+	if (field !== "" || row.length) {
+		row.push(field);
+		rows.push(row);
+	}
 	return rows.filter((r) => !(r.length === 1 && r[0]!.trim() === ""));
 }
 
